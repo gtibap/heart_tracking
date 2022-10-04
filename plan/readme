@@ -7,5 +7,25 @@ For a test video, the proposed method start with a B-Spline manually fitted in t
 For the estimations we use particle filtering.
 
 
+Testing
+
+In a selected video, a frame that represents ED is manually segmented. From this frame, we estimate the segmentations of the consecutive frames until the ES.
+We will compare the estimated image segmentation with a manually segmentation by an expert.
+The number of frames between ED and ES varies among videos.
+We apply a temporal normalization to deal with the problem of different frame numbers among videos.
+We apply a spatial normalization to deal with multiple visualization scales and heart sizes.
+
+
+For each video of training data, we calculate:
+distance difference between coordinates for each control point at the ED and the ES.
+distance difference between origin at the ED and the ES.
+difference in orientation of main axis between the ED and the ES.
+distance normalization using (apex-base)*w, where w=1/4
+
+On the other hand, likelihood.
+We could define it based on image intensities, with a partition of the space along the curve.
+
+
+
 
 
