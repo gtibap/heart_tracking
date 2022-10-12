@@ -480,7 +480,9 @@ if __name__== '__main__':
             # updating control points due to mouse interaction
             curve.ctrlpts = parameters.tolist() 
             # print ('number of points: ', len(curve.evalpts))
-            # cv2.polylines(img, np.int32([curve.ctrlpts]), 0, (0,255,0), 1)
+            for ctl_pt in curve.ctrlpts:
+                cv2.circle(img, np.int32(ctl_pt), 3, (125,255,125), 1)
+            
             cv2.polylines(img, np.int32([curve.evalpts]), 0, (0,255,255), 1)
 
             # drawing the main axis of the segmented region on the image

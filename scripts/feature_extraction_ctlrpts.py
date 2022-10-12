@@ -50,8 +50,8 @@ def feature_extract(control_points):
     diff_main_axis = rect2pol(main_axis_end) - rect2pol(main_axis_ini)
     
     # delta_main_axis = diff_main_axis / (len(frames)-1)
-    print("diff_main_axis")
-    print(diff_main_axis)
+    # print("diff_main_axis")
+    # print(diff_main_axis)
     # print(delta_main_axis)
 
     # first feature: angle difference between central axes of end of systole and end of diastole
@@ -59,14 +59,11 @@ def feature_extract(control_points):
 
     # the origin (apex location) is also changing from frame to frame
     # defining origin for each frame (new_origin)
-    diff_origins = control_points[1][0] - control_points[0][0]
+    
     # delta_origins = diff_origins / (len(frames)-1)
 
-    print('diff_origins: ', diff_origins)
-    print('diff_origins/w: ', diff_origins/w)
-
-    # second feature: origin difference normalized by w
-    feature_vector.append((diff_origins/w).tolist())
+    # print('diff_origins: ', diff_origins)
+    # print('diff_origins/w: ', diff_origins/w)
 
 
     # control points are also changing from frame to frame
@@ -87,20 +84,28 @@ def feature_extract(control_points):
     xs_end = np.dot(pts_end, secu_axis_end)
     ys_end = np.dot(pts_end, main_axis_end)
 
-    # third: calculating deltas between two consecutive frames
+    # third: calculating differences between ED and ES
     diff_xs = xs_end - xs_ini
     diff_ys = ys_end - ys_ini
 
-    print('diff_xs')
-    print(diff_xs)
-    print(diff_xs/w)
-    print('diff_ys')
-    print(diff_ys)
-    print(diff_ys/w)
+    # print('diff_xs')
+    # print(diff_xs)
+    # print(diff_xs/w)
+    # print('diff_ys')
+    # print(diff_ys)
+    # print(diff_ys/w)
 
-    # third feature: distance differences between control points, x vector and y vector
+    # third feature: normalized distance differences between control points, x vector and y vector
     feature_vector.append((diff_xs/w).tolist())
     feature_vector.append((diff_ys/w).tolist())
+
+    # represent diff_origins in the frame of reference ED
+    diff_origins = control_points[1][0] - control_points[0][0]
+    xs_origin = np.dot(diff_origins, secu_axis_ini)
+    ys_origin = np.dot(diff_origins, main_axis_ini)
+
+    # second feature: origin difference normalized by w
+    feature_vector.append([xs_origin/w, ys_origin/w])
 
 
     return feature_vector 
@@ -122,9 +127,10 @@ if __name__== '__main__':
     # print('filenames: ', len(file_name_list), file_name_list)
     # print('filenames: ', len(control_points_list), control_points_list[0])
 
-    features_cpts = feature_extract(control_points_list[0])
-    print('feature vector:')
-    print(features_cpts)
+    for ctl_pts in control_points_list[0:5]:
+        features_cpts = feature_extract(ctl_pts)
+        print('feature vector:')
+        print(features_cpts)
 
 
 
