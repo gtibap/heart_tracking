@@ -1,4 +1,5 @@
 # feature extraction control points
+from probability_distribution_test import distribution_fit
 import numpy as np 
 import cv2
 from numpy import linalg as LA
@@ -6,6 +7,7 @@ from geomdl import BSpline
 import pickle
 import sys
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def rect2pol(coord):
@@ -55,7 +57,7 @@ def feature_extract(control_points):
     # print(delta_main_axis)
 
     # first feature: angle difference between central axes of end of systole and end of diastole
-    feature_vector.append(diff_main_axis[1])
+    feature_vector.append([diff_main_axis[1]])
 
     # the origin (apex location) is also changing from frame to frame
     # defining origin for each frame (new_origin)
@@ -108,7 +110,8 @@ def feature_extract(control_points):
     feature_vector.append([xs_origin/w, ys_origin/w])
 
 
-    return feature_vector 
+    # return feature_vector 
+    return list(np.concatenate(feature_vector).flat)
 
 
 ####### main function ###########
@@ -125,12 +128,47 @@ if __name__== '__main__':
         [file_name_list, control_points_list] = pickle.load(fp)
         print ('done.')
     # print('filenames: ', len(file_name_list), file_name_list)
-    # print('filenames: ', len(control_points_list), control_points_list[0])
+    # print('ctrlpts: ', len(control_points_list), control_points_list[0])
 
-    for ctl_pts in control_points_list[0:5]:
+    features_list = []
+    
+    for ctl_pts in control_points_list:
         features_cpts = feature_extract(ctl_pts)
+        features_list.append(features_cpts)
         print('feature vector:')
-        print(features_cpts)
+        print(len(features_cpts), features_cpts )
+        # fts = list(np.concatenate(features_cpts).flat)
+        # print('feature vector:')
+        # print(len(fts), fts )
+
+    df = pd.DataFrame(features_list, columns=['ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'])
+    print('dataframe: ', df)
+
+
+    # ax = df.hist(column=['ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'], bins=12, alpha=0.5)
+    
+    binwidth=0.05
+    min=-2
+    max=2
+    # ax = df.hist(column=['ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
+
+    ax = df.hist(column=['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
+
+    df_subset = df[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']]
+    bx = df_subset.plot.kde()
+
+
+    # ax = df.hist(column=['x4'], bins=12, alpha=0.5)
+    
+    # ax = df.hist(column=['x4'], bins=np.arange(-1, 1 + binwidth, binwidth), alpha=0.5)
+    # plt.hist(data, bins=range(min(data), max(data) + binwidth, binwidth))
+
+    # ax = df.plot.kde()
+    # df.hist(column=['c0'], bins=30)
+    plt.show()
+
+    # distribution_fit(df)
+
 
 
 

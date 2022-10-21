@@ -206,7 +206,7 @@ def segmentation_interpolation(control_points, frames):
         # new_main_axis_0 = main_axis_ini + delta_main_axis*frame_number
         # new_main_axis_1 = main_axis_ini + diff_main_axis*ratios[frame_number]
         new_main_axis_1 = rect2pol(main_axis_ini) + diff_main_axis*ratios[frame_number]
-        print(new_main_axis_1)
+        # print(new_main_axis_1)
         new_main_axis_1 = pol2rect(new_main_axis_1)
         # print('y_new:', np.linalg.norm(new_main_axis_1))
 
@@ -481,7 +481,7 @@ if __name__== '__main__':
             curve.ctrlpts = parameters.tolist() 
             # print ('number of points: ', len(curve.evalpts))
             for ctl_pt in curve.ctrlpts:
-                cv2.circle(img, np.int32(ctl_pt), 3, (125,255,125), 1)
+                cv2.circle(img, np.int32(ctl_pt), 3, (0,0,255), -1)
             
             cv2.polylines(img, np.int32([curve.evalpts]), 0, (0,255,255), 1)
 

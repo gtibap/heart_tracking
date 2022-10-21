@@ -124,6 +124,7 @@ def segmentation_interpolation(control_points, frames):
     # defining origin for each frame (new_origin)
     diff_origins = control_points[1][0] - control_points[0][0]
 
+
     # control points are also changing from frame to frame
     # calculating the coordinates of each control point on its respective frame of reference
     # first: subtract origin for the respective first and end frames
@@ -258,6 +259,14 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
         if id_frame==0:
             threshold_value = np.median(values_circles)
             print('threshold value:', threshold_value)
+            # visualization
+            img_t = np.copy(frames[id_frame])
+            img_t = cv2.resize(img_t,(224,224),interpolation=cv2.INTER_CUBIC)
+            img_t = cv2.resize(img_t,(448,448),interpolation=cv2.INTER_CUBIC)
+            for center_ci in curve_1.evalpts:
+                cv2.circle(img_t, np.int32(center_ci), radius, (0,255,0), 1)
+            cv2.imshow('image',img_t)
+            cv2.waitKey(0)            
         else:
             pass
 
@@ -299,7 +308,7 @@ if __name__== '__main__':
     ## read the video of ultrasound images using file_name
     dir_videos = '../Videos/'
     ini_cont_rows = 0
-    for fn, cpts in zip(file_name_list[0:2], control_points_list):
+    for fn, cpts in zip(file_name_list, control_points_list):
         print('cont, file name: ', ini_cont_rows, fn)
         while fn == data_coord.at[ini_cont_rows,'FileName']:
             ### estimation and visualization image segmentations
