@@ -204,7 +204,7 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
     curve_1.ctrlpts = control_points[id_frame]
     curve_1.knotvector = [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 7, 7]
 
-    # geometric distance between apex and base at the end of diastole (ED)
+    # geometric distance between apex and base at the end of diastole (ED) (first frame)
     apex = np.array(control_points[0][0])
     base = np.array(control_points[0][4])
     # print('apex', apex)
@@ -260,13 +260,13 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
             threshold_value = np.median(values_circles)
             print('threshold value:', threshold_value)
             # visualization
-            img_t = np.copy(frames[id_frame])
-            img_t = cv2.resize(img_t,(224,224),interpolation=cv2.INTER_CUBIC)
-            img_t = cv2.resize(img_t,(448,448),interpolation=cv2.INTER_CUBIC)
-            for center_ci in curve_1.evalpts:
-                cv2.circle(img_t, np.int32(center_ci), radius, (0,255,0), 1)
-            cv2.imshow('image',img_t)
-            cv2.waitKey(0)            
+            # img_t = np.copy(frames[id_frame])
+            # img_t = cv2.resize(img_t,(224,224),interpolation=cv2.INTER_CUBIC)
+            # img_t = cv2.resize(img_t,(448,448),interpolation=cv2.INTER_CUBIC)
+            # for center_ci in curve_1.evalpts:
+            #     cv2.circle(img_t, np.int32(center_ci), radius, (0,255,0), 1)
+            # cv2.imshow('image',img_t)
+            # cv2.waitKey(0)            
         else:
             pass
 
@@ -288,6 +288,7 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
 if __name__== '__main__':
 
     filename_controlpts = 'data/controlpts_segmentations'
+    filename_feat_inten = 'data/features_intensities'
 
     # reading list of segmented sequences
     with open(filename_controlpts, 'rb') as fp:
@@ -305,6 +306,8 @@ if __name__== '__main__':
     print(data_coord.head())
 
     print('testing reading section...')
+
+    features_intesities_list=[]
     ## read the video of ultrasound images using file_name
     dir_videos = '../Videos/'
     ini_cont_rows = 0
@@ -317,13 +320,21 @@ if __name__== '__main__':
             frames_cpts = segmentation_interpolation(cpts, frames)
             feat_intens = drawing_segmentations(frames_cpts, frames, ini_frame, end_frame)
 
-            print('features intensities')
-            print(len(feat_intens))
-            print(feat_intens[0])
-            print(len(feat_intens[0]))
+            features_intesities_list.append(feat_intens)
+
+            print('features intensities ', fn)
+            print(len(feat_intens), len(frames))
+            # print(feat_intens[0])
+            # print(len(feat_intens[0]))
 
             # estimation and visualization image segmentations ###
             ini_cont_rows=cont_rows
-    print('cont, file name: ', ini_cont_rows, data_coord.at[ini_cont_rows,'FileName'])
+        
+    with open(filename_feat_inten, 'wb') as fp:
+        # the frames count started at 1 (first frame)
+        print('saving features intensities ...')
+        pickle.dump(features_intesities_list, fp)
+        print ('done.')
+    # print('cont, file name: ', ini_cont_rows, data_coord.at[ini_cont_rows,'FileName'])
     print('testing reading section... done.')
 

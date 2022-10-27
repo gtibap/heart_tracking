@@ -331,8 +331,11 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
 
         # frame visualization
         img = np.copy(frames[id_frame])
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
         img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
+
+
 
         # if selected_image == 0:
         #     img = np.copy(ini_frame)

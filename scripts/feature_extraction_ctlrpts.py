@@ -10,6 +10,29 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
+def change_sign(df, video_filename):
+
+    idx = df.index[df['filename'] == video_filename]
+    id_row = idx.values[0]
+    # print('idx: ', idx, type(idx))
+    print('a:', df.loc[id_row-2:id_row+2, 'x1':'x7'])
+    print('a:', df.loc[id_row, 'c0'])
+
+    df.at[id_row,'x1'] = - df.loc[id_row,'x1']
+    df.at[id_row,'x2'] = - df.loc[id_row,'x2']
+    df.at[id_row,'x3'] = - df.loc[id_row,'x3']
+    df.at[id_row,'x5'] = - df.loc[id_row,'x5']
+    df.at[id_row,'x6'] = - df.loc[id_row,'x6']
+    df.at[id_row,'x7'] = - df.loc[id_row,'x7']
+    df.at[id_row,'c0'] = - df.loc[id_row,'c0']
+    
+    print('b:', df.loc[id_row-2:id_row+2, 'x1':'x7'])
+    print('b:', df.loc[id_row, 'c0'])
+    # print('b:', df.loc[idx])
+    # print('c:', df.loc[idx+1])
+    return
+
+
 def rect2pol(coord):
     rho = np.sqrt(coord[0]**2 + coord[1]**2)
     phi = np.arctan2(coord[1], coord[0])
@@ -35,7 +58,7 @@ def feature_extract(control_points):
     # normalization factor w
     factor = 5.0
     w = np.linalg.norm(main_axis_ini) / factor
-    print('normalization factor: ', w)
+    # print('normalization factor: ', w)
     # axis normalization
 
     main_axis_ini = main_axis_ini / np.linalg.norm(main_axis_ini)
@@ -128,47 +151,40 @@ if __name__== '__main__':
         [file_name_list, control_points_list] = pickle.load(fp)
         print ('done.')
     # print('filenames: ', len(file_name_list), file_name_list)
-    # print('ctrlpts: ', len(control_points_list), control_points_list[0])
+    print('ctrlpts: ', len(control_points_list), control_points_list[0])
 
     features_list = []
     
     for ctl_pts in control_points_list:
         features_cpts = feature_extract(ctl_pts)
         features_list.append(features_cpts)
-        print('feature vector:')
-        print(len(features_cpts), features_cpts )
+        # print('feature vector:')
+        # print(len(features_cpts), features_cpts )
         # fts = list(np.concatenate(features_cpts).flat)
         # print('feature vector:')
         # print(len(fts), fts )
 
     df = pd.DataFrame(features_list, columns=['ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'])
-    print('dataframe: ', df)
 
+    df['filename'] = file_name_list
 
-    # ax = df.hist(column=['ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'], bins=12, alpha=0.5)
-    
+    # print('dataframe: ', df)
+
+    change_sign(df, '0X10B04432B90E5AC2.avi')
+
+        
     binwidth=0.05
     min=-2
     max=2
-    # ax = df.hist(column=['ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
-
+    
     ax = df.hist(column=['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
 
     df_subset = df[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']]
     bx = df_subset.plot.kde()
 
-
-    # ax = df.hist(column=['x4'], bins=12, alpha=0.5)
-    
-    # ax = df.hist(column=['x4'], bins=np.arange(-1, 1 + binwidth, binwidth), alpha=0.5)
-    # plt.hist(data, bins=range(min(data), max(data) + binwidth, binwidth))
-
-    # ax = df.plot.kde()
-    # df.hist(column=['c0'], bins=30)
     plt.show()
 
-    # distribution_fit(df)
-
+    
 
 
 
