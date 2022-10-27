@@ -15,8 +15,8 @@ def change_sign(df, video_filename):
     idx = df.index[df['filename'] == video_filename]
     id_row = idx.values[0]
     # print('idx: ', idx, type(idx))
-    print('a:', df.loc[id_row-2:id_row+2, 'x1':'x7'])
-    print('a:', df.loc[id_row, 'c0'])
+    # print('a:', df.loc[id_row-2:id_row+2, 'x1':'x7'])
+    # print('a:', df.loc[id_row, 'c0'])
 
     df.at[id_row,'x1'] = - df.loc[id_row,'x1']
     df.at[id_row,'x2'] = - df.loc[id_row,'x2']
@@ -26,11 +26,11 @@ def change_sign(df, video_filename):
     df.at[id_row,'x7'] = - df.loc[id_row,'x7']
     df.at[id_row,'c0'] = - df.loc[id_row,'c0']
     
-    print('b:', df.loc[id_row-2:id_row+2, 'x1':'x7'])
-    print('b:', df.loc[id_row, 'c0'])
+    # print('b:', df.loc[id_row-2:id_row+2, 'x1':'x7'])
+    # print('b:', df.loc[id_row, 'c0'])
     # print('b:', df.loc[idx])
     # print('c:', df.loc[idx+1])
-    return
+    return df
 
 
 def rect2pol(coord):
@@ -169,20 +169,24 @@ if __name__== '__main__':
     df['filename'] = file_name_list
 
     # print('dataframe: ', df)
+    # orientation of the four chamber view was mirrored in comparison with the initial reference... that is why we changed signs of x's components (x0-x8 and c0)
+    df = change_sign(df, '0X10B04432B90E5AC2.avi')
 
-    change_sign(df, '0X10B04432B90E5AC2.avi')
+    # save features control points
+    df.to_csv('data/features_ctlpts.csv')
+
 
         
-    binwidth=0.05
-    min=-2
-    max=2
+    # binwidth=0.05
+    # min=-2
+    # max=2
     
-    ax = df.hist(column=['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
+    # ax = df.hist(column=['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
 
-    df_subset = df[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']]
-    bx = df_subset.plot.kde()
+    # df_subset = df[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']]
+    # bx = df_subset.plot.kde()
 
-    plt.show()
+    # plt.show()
 
     
 

@@ -214,11 +214,13 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
     # radius of every circle along the curve defined in fuction of the chamber's size
     radius = np.int32(np.rint(dist_ed / 20.0))
 
-    print('dist radius: ', dist_ed, radius)
+    # print('dist radius: ', dist_ed, radius)
 
     # mask for intensities extraction inside the circles along the curve
     ref_mask = np.zeros((448,448),np.uint8)
-    ref_thresh = np.zeros((448,448),np.uint8)
+    # ref_thresh = np.zeros((448,448),np.uint8)
+    # image size extension in case the center of the circles are too close to the borders
+    ref_mask = cv2.copyMakeBorder(ref_mask, radius,radius,radius,radius, cv2.BORDER_REPLICATE)
 
     features_intensities = []
 
@@ -233,6 +235,8 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
         img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
+        # image size extension in case the circle too close to the image border
+        img = cv2.copyMakeBorder(img, radius,radius,radius,radius,cv2.BORDER_REFLECT_101)
 
         # print('image size:', img.shape)
         # updating control points due to mouse interaction
@@ -244,9 +248,19 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
             # intensity values inside the circles. We would need a mask of black
             mask_circle = np.copy(ref_mask)
             # painting a fulled white circle in the black mask
-            cv2.circle(mask_circle, np.int32(coord_point), radius, 255, -1)
+            cv2.circle(mask_circle, np.int32(coord_point+radius), radius, 255, -1)
             ## images visualization
             
+            # new_mask_circle = cv2.copyMakeBorder(mask_circle, radius,radius,radius,radius,cv2.BORDER_REFLECT_101)
+            # cv2.circle(mask_circle, np.int32(coord_point), np.int32(radius/2), 125, -1)
+            # img_2 = np.copy(img)
+            # cv2.circle(img_2, np.int32(coord_point+radius), radius, 255, 1)
+
+            # cv2.imshow('mask0', mask_circle)
+            # cv2.imshow('img 2', img_2)
+            # cv2.waitKey(0)
+
+
             img_roi = np.ma.array(img, mask=cv2.bitwise_not(mask_circle))
             # taking values inside the circle
             values_circles.append(img_roi.compressed().tolist())
@@ -313,28 +327,37 @@ if __name__== '__main__':
     ini_cont_rows = 0
     for fn, cpts in zip(file_name_list, control_points_list):
         print('cont, file name: ', ini_cont_rows, fn)
-        while fn == data_coord.at[ini_cont_rows,'FileName']:
+        if fn == data_coord.at[ini_cont_rows,'FileName']:
             ### estimation and visualization image segmentations
             file_name, frames, ini_frame, end_frame, cont_rows = read_frames(dir_videos, data_coord, ini_cont_rows)
             # print('filename, cont_rows:', file_name, cont_rows)    
+
+            # if fn == '0X112862331B7E140E.avi':
+            #     print('inside video...')
             frames_cpts = segmentation_interpolation(cpts, frames)
+            # print('frames interpolation done.')
             feat_intens = drawing_segmentations(frames_cpts, frames, ini_frame, end_frame)
 
+            # features list all videos
             features_intesities_list.append(feat_intens)
 
-            print('features intensities ', fn)
-            print(len(feat_intens), len(frames))
+            # print('features intensities ', fn)
+            # print(len(feat_intens), len(frames))
             # print(feat_intens[0])
             # print(len(feat_intens[0]))
 
             # estimation and visualization image segmentations ###
             ini_cont_rows=cont_rows
+        else:
+            print('warning: mismatch of filenames')
+            print( fn, ' != ', data_coord.at[ini_cont_rows,'FileName'])
+            print('warning: mismatch of filenames')
         
     with open(filename_feat_inten, 'wb') as fp:
         # the frames count started at 1 (first frame)
         print('saving features intensities ...')
-        pickle.dump(features_intesities_list, fp)
+        pickle.dump([file_name_list, features_intesities_list], fp)
         print ('done.')
-    # print('cont, file name: ', ini_cont_rows, data_coord.at[ini_cont_rows,'FileName'])
+    # # print('cont, file name: ', ini_cont_rows, data_coord.at[ini_cont_rows,'FileName'])
     print('testing reading section... done.')
 

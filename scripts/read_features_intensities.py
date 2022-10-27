@@ -27,29 +27,52 @@ if __name__== '__main__':
     with open(filename_feat_inten, 'rb') as fp:
         # the frames count started at 1 (first frame)
         print('reading features ...')
-        features_intesities_list = pickle.load(fp)
+        [filenames_list, features_intesities_list] = pickle.load(fp)
         print ('done.')
+    
+    # print('filenames:\n', filenames_list)
+    # print('feature intensities:\n ', len(features_intesities_list), len(features_intesities_list[0]), len(features_intesities_list[0][0]))
+    # print(features_intesities_list[0][0])
+    
 
     # print(len(features_intesities_list), len(features_intesities_list[0]), len(features_intesities_list[0][0]))
 
     frames_idx=[]
     frames_numbers = []
+    dataframe_list=[]
     for features_video in features_intesities_list:
-        frames_numbers.append(len(features_video))
+
+        df_video = pd.DataFrame(features_video)
+        # resampling, making all videos with same number of frames
+        # first, we choose 60s as reference from ED to ES for all videos
+        time_sec = np.linspace(0,60,num=len(features_video))
+        df_video.index = pd.to_datetime(time_sec, unit='s')
+        # resampling to 18 frames (median of frames among the videos)
+        # 18 frames in 60s, that means 3.529s between two consecutive frames (60/17)
+        # we fill missing values copying the closest one in front of it (back filling)
+        df_video = df_video.resample('3.529S').bfill()
+        dataframe_list.append(df_video.values.tolist())
+
+        # frames_numbers.append(len(features_video))
         # frames_idx.append(np.linspace(0,100,num=len(features_video)))
 
-    print(frames_numbers)
+    print('dataframe_list: ', len(dataframe_list), len(dataframe_list[7]), len(dataframe_list[7][0]))
+    # print(dataframe_list[7])
+    # print(frames_numbers)
+    # print('mean median:', np.mean(frames_numbers), np.median(frames_numbers))
+    # plt.hist(frames_numbers)
+    # plt.show()
 
-    df_video = pd.DataFrame(features_intesities_list[7])
+        # df_video = pd.DataFrame(features_intesities_list[7])
 
-    # resampling, making all videos with same number of frames
-    # arbitrary, we choose 60 s as reference from ED to ES
-    time_sec = np.linspace(0,60,num=len(features_intesities_list[7]))
-    df_video.index = pd.to_datetime(time_sec, unit='s')
-    print(df_video)
+        # # resampling, making all videos with same number of frames
+        # # arbitrary, we choose 60 s as reference from ED to ES
+        # time_sec = np.linspace(0,60,num=len(features_intesities_list[7]))
+        # df_video.index = pd.to_datetime(time_sec, unit='s')
+    # print(df_video)
     # resampling
     # 18 frames in 60 s, that means 3.529 s between two consecutive frames (60/17)
-    print(df_video.resample('3.529S').bfill())
+    # print(df_video.resample('3.529S').bfill())
 
 
 
