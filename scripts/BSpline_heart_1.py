@@ -67,6 +67,7 @@ def read_frames(dir_videos, data_coord, ini_cont_rows):
     segmented_frames = 0
     save_frames = False
     cont_frames=0
+    scale_factor=4
 
     while cap.isOpened() and segmented_frames < 2:
         ret, frame = cap.read()
@@ -78,15 +79,18 @@ def read_frames(dir_videos, data_coord, ini_cont_rows):
         if cont_frames == frame_number:
 
             img = np.copy(frame)
+            # resizing for a better image visualization
+            img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
+            img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
 
             # drawing image segmentation--lines in the left ventricle--on a selected frame (end of diastole or end of systole)
             while file_name == new_file_name and frame_number == new_frame_number:
 
-                x1 = round(data_coord.at[cont_rows,'X1'])
-                y1 = round(data_coord.at[cont_rows, 'Y1'])
+                x1 = round(scale_factor * data_coord.at[cont_rows,'X1'])
+                y1 = round(scale_factor * data_coord.at[cont_rows, 'Y1'])
 
-                x2 = round(data_coord.at[cont_rows,'X2'])
-                y2 = round(data_coord.at[cont_rows, 'Y2'])
+                x2 = round(scale_factor * data_coord.at[cont_rows,'X2'])
+                y2 = round(scale_factor * data_coord.at[cont_rows, 'Y2'])
 
                 # drawing image segmentation, line by line
                 cv2.line(img,(x1,y1),(x2,y2),(255,255,0),1)
@@ -95,9 +99,6 @@ def read_frames(dir_videos, data_coord, ini_cont_rows):
                 new_file_name = data_coord.at[cont_rows,'FileName']
                 new_frame_number = data_coord.at[cont_rows,'Frame']
 
-            # resizing for a better image visualization
-            img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
-            img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
 
             # saving images with their respective segmentations
             if save_frames == False:
@@ -357,7 +358,7 @@ def drawing_segmentations(control_points, frames, ini_frame, end_frame):
             cv2.circle(img, np.int32(coord_point), radius, (0,255,255), 1)
 
         # drawing the main axis of the segmented region on the image
-        cv2.line(img, np.int32(curve_1.ctrlpts[0]), np.int32(curve_1.ctrlpts[4]), (255,0,0), 1)
+        cv2.line(img, np.int32(curve_1.ctrlpts[0]), np.int32(curve_1.ctrlpts[4]), (255,0,0), 2)
 
         ## images visualization
         cv2.imshow('image',img)

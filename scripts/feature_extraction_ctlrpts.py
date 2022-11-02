@@ -164,6 +164,11 @@ if __name__== '__main__':
         # print('feature vector:')
         # print(len(fts), fts )
 
+    mean_feat = np.mean(features_list,axis=0)
+    std_feat = np.std(features_list, axis=0)
+    print('mean: ', mean_feat)
+    print('std: ', std_feat)
+
     df = pd.DataFrame(features_list, columns=['ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'])
 
     df['filename'] = file_name_list
@@ -175,18 +180,17 @@ if __name__== '__main__':
     # save features control points
     df.to_csv('data/features_ctlpts.csv')
 
-
         
-    # binwidth=0.05
-    # min=-2
-    # max=2
+    binwidth=0.05
+    min=-2
+    max=2
     
-    # ax = df.hist(column=['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
+    ax = df.hist(column=['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1'], bins=np.arange(min, max + binwidth, binwidth), alpha=0.5)
 
-    # df_subset = df[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']]
-    # bx = df_subset.plot.kde()
+    df_subset = df[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']]
+    bx = df_subset.plot.kde()
 
-    # plt.show()
+    plt.show()
 
     
 

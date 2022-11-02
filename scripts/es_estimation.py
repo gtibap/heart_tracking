@@ -9,6 +9,107 @@ import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 
+def rect2pol(coord):
+    rho = np.sqrt(coord[0]**2 + coord[1]**2)
+    phi = np.arctan2(coord[1], coord[0])
+    return np.array([rho, phi])
+
+def pol2rect(coord):
+    x = coord[0] * np.cos(coord[1])
+    y = coord[0] * np.sin(coord[1])
+    return np.array([x, y])
+
+
+# generating particles (sets of control points) for boundaries' estimation of the left ventricular cavity
+def particles_generation(control_points, delta_mov):
+
+    control_points = np.array(control_points)
+    # control points 0 and 4 define main axis in each of the two segmented images
+    main_axis = control_points[4] - control_points[0]
+    # main_axis_end = control_points[1][4] - control_points[1][0]
+
+    # axis normalization
+
+    main_axis_ini = main_axis / np.linalg.norm(main_axis)
+    # main_axis_end = main_axis_end / np.linalg.norm(main_axis_end)
+
+    # defining a new main axis that depends of the number of frames between the segmented images
+
+    # diff_main_axis = main_axis_end - main_axis_ini
+    # diff_main_axis = rect2pol(main_axis_end) - rect2pol(main_axis_ini)
+
+    # the origin (apex location) is also changing from frame to frame
+    # defining origin for each frame (new_origin)
+    # diff_origins = control_points[1][0] - control_points[0][0]
+
+
+    # control points are also changing from frame to frame
+    # calculating the coordinates of each control point on its respective frame of reference
+    # first: subtract origin for the respective first and end frames
+    pts = control_points - control_points[0]
+    # pts_end = control_points[1] - control_points[1][0]
+    # print(control_points[0])
+    # print(pts_ini) 
+    #second: calculating components of each resultant vector in the main_axis frame of reference
+    # calculating secundary axis that is perpendicular to the main axis for the initial and end frames
+    secu_axis = np.cross(main_axis, (0,0,-1))[0:2]
+    # secu_axis_end = np.cross(main_axis_end, (0,0,-1))[0:2]
+
+    xs = np.dot(pts, secu_axis)
+    ys = np.dot(pts, main_axis)
+
+    # xs_end = np.dot(pts_end, secu_axis_end)
+    # ys_end = np.dot(pts_end, main_axis_end)
+
+    # third: calculating deltas between two consecutive frames
+    # diff_xs = xs_end - xs_ini
+    # diff_ys = ys_end - ys_ini
+    
+    # # calcualting ratio of increments amount frames using a cosine function
+    # alphas = np.linspace(0, 3.14159265, len(frames))
+    # ratios = (1-np.cos(alphas)) / 2.0
+
+    # frames_control_pts_1 = []
+    main_axis_polar = rect2pol(main_axis)
+    # the main axis is changing from frame to frame
+    for frame_number in np.arange(len(frames)):
+
+        # new_main_axis_1 = main_axis_ini_polar + diff_main_axis*ratios[frame_number]
+        new_main_axis = main_axis_polar + delta_ang
+        new_main_axis = pol2rect(new_main_axis)
+        # print('y_new:', new_main_axis)
+
+        # main axis is y axis, new_secu_axis is x axis, and (0,0,-1) is z axis
+        # applying cross product and taking only two components of the result
+        new_secu_axis_1 = np.cross(new_main_axis_1, (0,0,-1))[0:2]
+        # print('x_new:', new_secu_axis)
+
+        # the origin (apex location) is also changing from frame to frame
+        # defining origin for each frame (new_origin)
+        new_origin_1 = control_points[0][0] + diff_origins*ratios[frame_number]
+
+        # fourth: adding deltas according to the frame number
+        new_xs_1 = xs_ini + diff_xs*ratios[frame_number]
+        new_ys_1 = ys_ini + diff_ys*ratios[frame_number]
+
+
+        # reshaping to apply matrix multiplication
+        # assembling all to calculate coordinates in the original frame of reference
+        new_main_axis_1 = np.reshape(new_main_axis_1, (1,2))
+        new_secu_axis_1 = np.reshape(new_secu_axis_1, (1,2))
+
+        new_xs_1 = np.reshape(new_xs_1, (-1,1))
+        new_ys_1 = np.reshape(new_ys_1, (-1,1))
+
+        new_pts_1 = new_xs_1*new_secu_axis_1 + new_ys_1*new_main_axis_1 + new_origin_1
+
+        # frames_control_pts_0.append(new_pts_0.tolist())
+        frames_control_pts_1.append(new_pts_1.tolist())
+
+
+    return frames_control_pts_1
+
+
 #### function read video ultrasound ####
 def read_frames(dir_video, seg_data):
 
@@ -143,33 +244,124 @@ if __name__== '__main__':
     filename_controlpts = 'data/controlpts_segmentations'
     filename_pca = 'data/pca_data'
     dir_video = '../Videos/'
+    filename_segmentations = '../VolumeTracings.csv'
+    filename_features_ctrlpts = 'data/features_ctlpts.csv'
 
-    # reading list of features
+    # reading list of intensity features
     with open(filename_pca, 'rb') as fp:
         # the frames count started at 1 (first frame)
         print('reading pca data ...')
         [X_train, X_test, names_train, names_test, pca_list, mean_list, std_list] = pickle.load(fp)
         print ('done.')
-    
+
+
+    # reading features control points
+    with open(filename_controlpts, 'rb') as fp:
+        # the frames count started at 1 (first frame)
+        print('reading control points B-Splines ...')
+        [file_name_list, control_points_list] = pickle.load(fp)
+        print ('done.')
+    df_controlpts = pd.DataFrame(control_points_list)
+    df_controlpts.rename(columns={0:'ED',1:'ES'}, inplace=True)
+    df_controlpts['FileName']=file_name_list
+    print(df_controlpts.head())
+
+    # print('filenames: ', len(file_name_list), file_name_list)
+    # print('ctrlpts: ', len(control_points_list), len(control_points_list[0]), len(control_points_list[0][0]),control_points_list[0][0])
+    # print('ctrlpts: ', len(control_points_list), len(control_points_list[1]), len(control_points_list[1][0]),control_points_list[1][0])
+
+
+    # save features control points
+    print('reading features from control points...')
+    df_feat_ctrlpts = pd.read_csv(filename_features_ctrlpts)
+    print('done.')
+    # print(df.head())
+
+
     # print(len(X_train), len(X_test), len(pca_list), len(mean_list), len(std_list))
     # print(names_test)
 
     # read test data set
     ## read file name from a csv file
-    print('read csv file')
-
-    data_coord = pd.read_csv('../VolumeTracings.csv')
+    print('reading image segmentation of reference from Echonet...')
+    df_seg = pd.read_csv(filename_segmentations)
+    # data_coord = pd.read_csv(filename_segmentations)
+    print('done.')
     # print(data_coord.head())
 
-    seg_data = data_coord[data_coord['FileName']==names_test[0]]
-    # print(seg_data)
+    # reading each test video
+    for id_test, filename_test in enumerate(names_test[0:1]):
 
-    selected_frames, frame_ini, frame_end = read_frames(dir_video + names_test[0], seg_data)
+        # opening test data: ED and ES frames with their manual segmentations; frames between ED and ES
+        # manual segmentation
+        df_test = df_seg[df_seg['FileName']==filename_test]
+        # print(seg_data)
 
-    img_ed_es = np.concatenate((frame_ini,frame_end),axis=1)
-    cv2.imshow('ref', img_ed_es)
-    display_frames(selected_frames)
-    # cv2.waitKey(0)
+        
+        # segmented ED and ES images
+        selected_frames, frame_ini, frame_end = read_frames(dir_video + filename_test, df_test)
+
+        # img_ed_es = np.concatenate((frame_ini,frame_end),axis=1)
+        # cv2.imshow('ref', img_ed_es)
+        # display_frames(selected_frames)
+
+        # opening control points for the test video
+        # features_intensities = X_test[0]
+        # print(len(features_intensities), len(features_intensities[0]))
+        # print(ctrl_points)
+
+        # control points of the first test video
+        test_df_controlpts = df_controlpts[df_controlpts['FileName']==filename_test]
+        # print(test_df_controlpts)
+        ctrlpts_test_ed = test_df_controlpts['ED'].values.tolist()[0]
+        ctrlpts_test_es = test_df_controlpts['ES'].values.tolist()[0]
+        
+        # drawing an initial B-Spline curve in a ED frame of a the test data set
+        curve = BSpline.Curve()
+        # Set evaluation delta (control the number of curve points)
+        curve.delta = 0.02
+        curve.order = 3
+        # curve.ctrlpts = parameters.tolist()
+        curve.ctrlpts = ctrlpts_test_ed
+        curve.knotvector = [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 7, 7]
+
+        # drawing an initial B-Spline curve in a ED frame of a the test data set
+        curve_es = BSpline.Curve()
+        # Set evaluation delta (control the number of curve points)
+        curve_es.delta = 0.02
+        curve_es.order = 3
+        # curve.ctrlpts = parameters.tolist()
+        curve_es.ctrlpts = ctrlpts_test_es
+        curve_es.knotvector = [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 7, 7]
+
+        # frame visualization
+        # img = np.copy(frame_ini)
+        for frame in selected_frames:
+            img = np.copy(frame)
+            # resizing for a better image visualization
+            img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
+            img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
+            # drawing control points
+            # for ctl_pt in curve.ctrlpts:
+            #     cv2.circle(img, np.int32(ctl_pt), 3, (0,0,255), -1)
+            # drawing the curve 
+            cv2.polylines(img, np.int32([curve.evalpts]), 0, (0,255,255), 1)
+            # cv2.polylines(img, np.int32([curve_es.evalpts]), 0, (0,255,0), 1)
+            # drawing the main axis of the segmented region on the image
+            # cv2.line(img, np.int32(curve.ctrlpts[0]), np.int32(curve.ctrlpts[4]), (255,255,0), 1)
+
+            cv2.imshow('ED',img)
+            cv2.waitKey(100)
+
+            # calcualting ratio of increments amount frames using a cosine function
+            alphas = np.linspace(0, 3.14159265, len(frames))
+            ratios = (1-np.cos(alphas)) / 2.0
+
+            ctrlpts_sets = particles_generation(ctrlpts_test_es)
+
+        cv2.waitKey(0)
+    
+    
 
     cv2.destroyAllWindows()
 
