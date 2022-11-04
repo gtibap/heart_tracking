@@ -49,24 +49,123 @@ def pol2rect(coord):
     return np.array([x, y])
 
 
-def predict(particles, u, std, dt=1.):
-    """ move according to control input u (heading change, velocity)
-    with noise Q (std heading change, std velocity)`"""
+def predict(particles, u, std):
 
-    N = len(particles)
+    # print('predict')
+    # # print('ang:', particles[:,0])
+    # print(len(particles), len(particles[0]))
+    # N = len(particles)
+
+    # ang
+    particles[:,0] += u['ang'] + (randn(N) * std['ang'])
+    # # x0
+    # particles[:,1] += u[1] + (randn(N) * std[1])
+    # x1
+    particles[:,2] += u['x1'] + (randn(N) * std['x1'])
+    # x2
+    particles[:,3] += u['x2'] + (randn(N) * std['x2'])
+    # x3
+    particles[:,4] += u['x3'] + (randn(N) * std['x3'])
+    # # x4
+    # particles[:,5] += u[5] + (randn(N) * std[5])
+    # x5
+    particles[:,6] += u['x5'] + (randn(N) * std['x5'])
+    # x6
+    particles[:,7] += u['x6'] + (randn(N) * std['x6'])
+    # x7
+    particles[:,8] += u['x7'] + (randn(N) * std['x7'])
+    # # x8
+    # particles[:,9] += u[9] + (randn(N) * std[9])
+    # # y0
+    # particles[:,10] += u[10] + (randn(N) * std[10])
+    # y1
+    particles[:,11] += u['y1'] + (randn(N) * std['y1'])
+    # y2
+    particles[:,12] += u['y2'] + (randn(N) * std['y2'])
+    # y3
+    particles[:,13] += u['y3'] + (randn(N) * std['y3'])
+    # y4
+    particles[:,14] += u['y4'] + (randn(N) * std['y4'])
+    # y5
+    particles[:,15] += u['y5'] + (randn(N) * std['y5'])
+    # y6
+    particles[:,16] += u['y6'] + (randn(N) * std['y6'])
+    # y7
+    particles[:,17] += u['y7'] + (randn(N) * std['y7'])
+    # # y8
+    # particles[:,18] += u[18] + (randn(N) * std[18])
+    # c0
+    particles[:,19] += u['c0'] + (randn(N) * std['c0'])
+    # c1
+    particles[:,20] += u['c1'] + (randn(N) * std['c1'])
+
+    return particles
+
+    # for  id in np.arange(len(particles[0])):
+    #     particles[:,id] += u[id] + (randn(N) * std[id])    
+
+    # return particles
+
+    # # ang
+    # particles[:,0] += u[0] + (randn(N) * std[0])
+    # # x0
+    # particles[:,1] += u[1] + (randn(N) * std[1])
+    # # x1
+    # particles[:,2] += u[2] + (randn(N) * std[2])
+    # # x2
+    # particles[:,3] += u[3] + (randn(N) * std[3])
+    # # x3
+    # particles[:,4] += u[4] + (randn(N) * std[4])
+    # # x4
+    # particles[:,5] += u[5] + (randn(N) * std[5])
+    # # x5
+    # particles[:,6] += u[6] + (randn(N) * std[6])
+    # # x6
+    # particles[:,7] += u[7] + (randn(N) * std[7])
+    # # x7
+    # particles[:,8] += u[8] + (randn(N) * std[8])
+    # # x8
+    # particles[:,9] += u[9] + (randn(N) * std[9])
+    # # y0
+    # particles[:,10] += u[10] + (randn(N) * std[10])
+    # # y1
+    # particles[:,11] += u[11] + (randn(N) * std[11])
+    # # y2
+    # particles[:,12] += u[12] + (randn(N) * std[12])
+    # # y3
+    # particles[:,13] += u[13] + (randn(N) * std[13])
+    # # y4
+    # particles[:,14] += u[14] + (randn(N) * std[14])
+    # # y5
+    # particles[:,15] += u[15] + (randn(N) * std[15])
+    # # y6
+    # particles[:,16] += u[16] + (randn(N) * std[16])
+    # # y7
+    # particles[:,17] += u[17] + (randn(N) * std[17])
+    # # y8
+    # particles[:,18] += u[18] + (randn(N) * std[18])
+    # # c0
+    # particles[:,19] += u[19] + (randn(N) * std[19])
+    # # c1
+    # particles[:,20] += u[20] + (randn(N) * std[20])
+
+    # return particles
+
+
+    # N = len(particles)
     # update heading
     # print('heading:')
     # print(particles[:, 2])
-    particles[:, 2] += u[0] + (randn(N) * std[0])
-    particles[:, 2] %= 2 * np.pi
-    # print(particles[:, 2])
+    # particles[:, 2] += u[0] + (randn(N) * std[0])
+    # particles[:, 2] %= 2 * np.pi
+    # # print(particles[:, 2])
 
-    # move in the (noisy) commanded direction
-    dist = (u[1] * dt) + (randn(N) * std[1])
-    # print('dist:')
-    # print(dist)
-    particles[:, 0] += np.cos(particles[:, 2]) * dist
-    particles[:, 1] += np.sin(particles[:, 2]) * dist
+    # # move in the (noisy) commanded direction
+    # dist = (u[1] * dt) + (randn(N) * std[1])
+    # # print('dist:')
+    # # print(dist)
+    # particles[:, 0] += np.cos(particles[:, 2]) * dist
+    # particles[:, 1] += np.sin(particles[:, 2]) * dist
     # print('particles:')
     # print(particles)
 
@@ -74,11 +173,13 @@ def predict(particles, u, std, dt=1.):
 #     particles=[]
 
 
-    return particles
+    # return particles
 
 # generating particles (sets of control points) for boundaries' estimation of the left ventricular cavity
 # N number of particles
 def create_particles(control_points, N):
+
+    particle = []
 
     control_points = np.array(control_points)
 
@@ -91,6 +192,10 @@ def create_particles(control_points, N):
 
     main_axis_ini = main_axis_ini / np.linalg.norm(main_axis_ini)
     # main_axis_end = main_axis_end / np.linalg.norm(main_axis_end)
+
+    # first component ang
+    main_axis_polar = rect2pol(main_axis_ini)
+    particle.append([main_axis_polar[1]])
 
     # defining a new main axis that depends of the number of frames between the segmented images
 
@@ -117,18 +222,35 @@ def create_particles(control_points, N):
     xs_ini = np.dot(pts, secu_axis_ini)
     ys_ini = np.dot(pts, main_axis_ini)
     
-    xs_ini = np.reshape(xs_ini, (-1,1))
-    ys_ini = np.reshape(ys_ini, (-1,1))
+    # second: control points coordinates
+    particle.append(xs_ini.tolist())
+    particle.append(ys_ini.tolist())
 
-    pts_ctl = np.concatenate((xs_ini,ys_ini),axis=1)
+    # third: origin
+    particle.append(control_points[0].tolist())
+
+    # xs_ini = np.reshape(xs_ini, (-1,1))
+    # ys_ini = np.reshape(ys_ini, (-1,1))
+
+    # pts_ctl = np.concatenate((xs_ini,ys_ini),axis=1)
 
     # print('xs', xs_ini)
     # print('ys', ys_ini)
     # print('[xs,ys]', pts_ctl, pts_ctl.shape)
 
     # particles = np.empty((N, len(control_points), 2))
-    particles = np.repeat([pts_ctl], N, axis=0) 
+
+
+    # print(particle)
+    # particle = list(np.concatenate(particle).flat)
+    # transform list of lists into a plain numpy array
+    particle = np.concatenate(particle)
+    # print(particle)
+    particles = np.repeat([particle], N, axis=0) 
     # print(len(particles), particles.shape)
+
+    # generating N identical particles
+    # particles = N*[particle]
     # print(particles)
     # particles[:, 1] = mean[1] + (randn(N) * std[1])
     # particles[:, 2] = mean[2] + (randn(N) * std[2])
@@ -375,8 +497,11 @@ if __name__== '__main__':
     # df_subset = train_cp[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']]
     mean_cp = train_cp[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']].mean()
     std_cp = train_cp[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']].std()
-    # print(mean_cp)
-    # print(std_cp)
+    # mean_cp = train_cp.mean()
+    # std_cp = train_cp.std()
+    print('mean and std:')
+    print(mean_cp)
+    print(std_cp)
 
 
     # binwidth=0.1
@@ -459,7 +584,15 @@ if __name__== '__main__':
         factor = 5.0
         w = np.linalg.norm(main_axis_ini) / factor
         print('w:',w)
-        
+
+        # scaling all the components by w; all but ang        
+        new_mean = mean_cp * w
+        new_mean['ang'] = mean_cp['ang']
+        new_std = std_cp * w
+        new_std['ang'] = std_cp['ang']
+
+        print(new_mean)
+        print(new_std)
         
         # # drawing an initial B-Spline curve in a ED frame of a the test data set
         # curve_es = BSpline.Curve()
@@ -470,25 +603,59 @@ if __name__== '__main__':
         # curve_es.ctrlpts = ctrlpts_test_es
         # curve_es.knotvector = [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 7, 7]
 
-        # particles initialization
-        particles = create_particles(ctrlpts_test_ed, 2)
-        pf_control_points = []
+
+        # calcualting ratio of increments amount frames using a cosine function
+        # alphas = np.linspace(0, 3.14159265, len(selected_frames))
+        alphas = np.linspace(0, np.pi, len(selected_frames))
+        print('len(selected_frames): ', len(selected_frames))
+        # print(alphas)
+        ratios=[]
+        for a, b in zip(alphas,alphas[1:]):
+            # print(a, b)
+            ratios.append(((1-np.cos(b))-(1-np.cos(a))) / 2.0)
+        print(len(ratios))
+        # print(ratios)
+        # print(np.cumsum(ratios))
+
+
+        # print(new_mean * ratios[0])
+
+        # plt.plot(ratios)
+        # plt.plot(np.cumsum(ratios))
+        # plt.show()
+
+        # particles initialization, N number of particles
+        N=3
+        particles = create_particles(ctrlpts_test_ed, N)
+        # print(len(particles), len(particles[0]))
+        # pf_control_points = []
         # frame visualization
         # img = np.copy(frame_ini)
-        for frame in selected_frames:
+        print('before')
+        print(particles)
+        acc=0
+        for id_frame, frame in enumerate(selected_frames[1:]):
         
-            # calcualting ratio of increments amount frames using a cosine function
-            # alphas = np.linspace(0, 3.14159265, len(frames))
-            # ratios = (1-np.cos(alphas)) / 2.0
-
+            # print('frame: ', id_frame, new_mean['y5'])
+            mean_values = new_mean*ratios[id_frame]
+            std_values = new_std*ratios[id_frame]
+            # print('frame: ', id_frame, mean_values['y5'])
+            # acc+=mean_values['y5']
             # ctrlpts_sets = particles_generation(ctrlpts_test_es)
-            particles = predict(particles, mean_cp, std_cp)
+            # print('before')
+            # print(particles)
+            particles = predict(particles, mean_values, std_values)
+            # print('after')
+            # print(particles)
             # curve.ctrlpts = update()
+        # print('acc:', acc)
+        print('after')
+        print(particles)
 
-        for frame, control_points in zip(selected_frames, pf_control_points):
-            drawing_curve(frame, control_points)
+        # for frame, control_points in zip(selected_frames, pf_control_points):
+        #     drawing_curve(frame, control_points)
 
-        cv2.waitKey(0)
+        # cv2.waitKey(0)
 
     cv2.destroyAllWindows()
 
