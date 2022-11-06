@@ -9,6 +9,7 @@ import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from numpy.random import randn
+import scipy.stats
 
 def drawing_curve(frame, control_points):
 
@@ -34,8 +35,8 @@ def drawing_curve(frame, control_points):
     # drawing the main axis of the segmented region on the image
     # cv2.line(img, np.int32(curve.ctrlpts[0]), np.int32(curve.ctrlpts[4]), (255,255,0), 1)
 
-    # cv2.imshow('ED',img)
-    # cv2.waitKey(100)
+    cv2.imshow('frame',img)
+    cv2.waitKey(1000)
     return
 
 def rect2pol(coord):
@@ -47,6 +48,67 @@ def pol2rect(coord):
     x = coord[0] * np.cos(coord[1])
     y = coord[0] * np.sin(coord[1])
     return np.array([x, y])
+
+def drawing_particles(frame, particles):
+    
+    # img = np.copy(frame)
+    # # resizing for a better image visualization
+    # # aditionally, all data have been recording with an image size of (448,448)
+    # img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
+    # img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
+
+    for particle in particles:
+        # print(particle)
+        ang = particle[0]
+        xs = particle[1:10]
+        ys = particle[10:19]
+        c0 = particle[19]
+        c1 = particle[20]
+        # print('particle')
+        # print(ang, xs, ys, c0, c1)
+
+        main_axis = pol2rect([1.0, ang])
+        secu_axis = np.cross(main_axis, (0,0,-1))[0:2]
+
+                # reshaping to apply matrix multiplication
+        # assembling all to calculate coordinates in the original frame of reference
+        main_axis = np.reshape(main_axis, (1,2))
+        secu_axis = np.reshape(secu_axis, (1,2))
+
+        xs = np.reshape(xs, (-1,1))
+        ys = np.reshape(ys, (-1,1))
+
+        ctrlpts = xs*secu_axis + ys*main_axis + [c0,c1]
+
+        # print('control points')
+        # print(ctrlpts)
+
+        drawing_curve(frame, ctrlpts.tolist())
+
+        # cv2.imshow('frame', img)
+        # cv2.waitKey(500)
+
+    return
+
+# def update(particles, weights, mean, std, frame):
+def update(particles, frame, df_pca_intensities, weights):
+    # print('weights:')
+    drawing_particles(frame, particles)
+
+
+    # for i, landmark in enumerate(landmarks):
+    #     distance = np.linalg.norm(particles[:, 0:2] - landmark, axis=1)
+    #     weights *= scipy.stats.norm(distance, R).pdf(z[i])
+    #     # print(distance)
+    #     # print(weights)
+
+    # print('weightsUpdate:')
+    print(weights)
+    weights += 1.e-300      # avoid round-off to zero
+    weights /= sum(weights) # normalize
+    # print(weights)
+
+    return weights
 
 
 def predict(particles, u, std):
@@ -455,6 +517,15 @@ if __name__== '__main__':
         [X_train, X_test, names_train, names_test, pca_list, mean_list, std_list] = pickle.load(fp)
         print ('done.')
 
+    # print('pca: ', len(pca_list))
+    # print('mean_list: ', len(mean_list), len(mean_list[0]))
+    # print('std_list: ', len(std_list), len(std_list[0]))
+
+    d={'pca': pca_list, 'mean': mean_list, 'std': std_list}
+    df_intensities = pd.DataFrame(data=d)
+    time_sec = np.linspace(0,60,num=len(pca_list))
+    df_intensities.index = pd.to_datetime(time_sec, unit='s')
+    # print(df_intensities.head())
 
     # reading features control points
     with open(filename_controlpts, 'rb') as fp:
@@ -549,6 +620,7 @@ if __name__== '__main__':
     print('done.')
     # print(data_coord.head())
 
+
     # reading each test video
     for id_test, filename_test in enumerate(names_test[0:1]):
 
@@ -585,14 +657,14 @@ if __name__== '__main__':
         w = np.linalg.norm(main_axis_ini) / factor
         print('w:',w)
 
-        # scaling all the components by w; all but ang        
+        # scaling all the components of training data by w; all but ang        
         new_mean = mean_cp * w
-        new_mean['ang'] = mean_cp['ang']
         new_std = std_cp * w
+        new_mean['ang'] = mean_cp['ang']
         new_std['ang'] = std_cp['ang']
 
-        print(new_mean)
-        print(new_std)
+        # print(new_mean)
+        # print(new_std)
         
         # # drawing an initial B-Spline curve in a ED frame of a the test data set
         # curve_es = BSpline.Curve()
@@ -607,13 +679,13 @@ if __name__== '__main__':
         # calcualting ratio of increments amount frames using a cosine function
         # alphas = np.linspace(0, 3.14159265, len(selected_frames))
         alphas = np.linspace(0, np.pi, len(selected_frames))
-        print('len(selected_frames): ', len(selected_frames))
+        # print('len(selected_frames): ', len(selected_frames))
         # print(alphas)
         ratios=[]
         for a, b in zip(alphas,alphas[1:]):
             # print(a, b)
             ratios.append(((1-np.cos(b))-(1-np.cos(a))) / 2.0)
-        print(len(ratios))
+        # print(len(ratios))
         # print(ratios)
         # print(np.cumsum(ratios))
 
@@ -624,33 +696,53 @@ if __name__== '__main__':
         # plt.plot(np.cumsum(ratios))
         # plt.show()
 
+        # we used 59.9 instead of 60.0 due to approximation issues
+        period = 60 / (len(selected_frames)-1)
+        # avoiding approx. issues we applied the next two lines for selection of three decimals without rounding
+        a = str(period).split('.')
+        b=a[0]+'.'+a[1][0:3]
+        # print('period:', len(selected_frames), period, b)
+        # print('period:', len(selected_frames), period, round(period,3))
+        # df_resampled = df_intensities.resample(str(round(period,3))+'S').bfill()
+        df_frames_intensities = df_intensities.resample(b+'S').bfill()
+        # print(df_frames_intensities)
+        # print('frame 0')
+        # print(df_frames_intensities.iloc[0])
+        # print('frame 1')
+        # print(df_frames_intensities.iloc[1])
+
+
         # particles initialization, N number of particles
-        N=3
+        N=10
         particles = create_particles(ctrlpts_test_ed, N)
         # print(len(particles), len(particles[0]))
         # pf_control_points = []
         # frame visualization
         # img = np.copy(frame_ini)
-        print('before')
-        print(particles)
+        # print('before')
+        # print(particles)
         acc=0
+        weights = np.ones(N) / N
         for id_frame, frame in enumerate(selected_frames[1:]):
         
             # print('frame: ', id_frame, new_mean['y5'])
-            mean_values = new_mean*ratios[id_frame]
-            std_values = new_std*ratios[id_frame]
+            print('id frame: ', id_frame)
+            # mean and standard deviation between two consecutive frames
+            delta_mean = new_mean*ratios[id_frame]
+            delta_std = new_std*ratios[id_frame]
             # print('frame: ', id_frame, mean_values['y5'])
             # acc+=mean_values['y5']
             # ctrlpts_sets = particles_generation(ctrlpts_test_es)
             # print('before')
             # print(particles)
-            particles = predict(particles, mean_values, std_values)
+            particles = predict(particles, delta_mean, delta_std)
+            weights = update(particles, frame, df_frames_intensities.iloc[id_frame+1], weights)
             # print('after')
             # print(particles)
             # curve.ctrlpts = update()
         # print('acc:', acc)
-        print('after')
-        print(particles)
+        # print('after')
+        # print(particles)
 
         # for frame, control_points in zip(selected_frames, pf_control_points):
         #     drawing_curve(frame, control_points)
