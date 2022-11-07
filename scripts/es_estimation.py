@@ -10,6 +10,30 @@ from sklearn.model_selection import train_test_split
 from sklearn.decomposition import PCA
 from numpy.random import randn
 import scipy.stats
+from filterpy.monte_carlo import systematic_resample
+
+
+def neff(weights):
+    return 1. / np.sum(np.square(weights))
+
+
+def resample_from_index(particles, weights, indexes):
+    # print('indexes:', len(indexes), indexes)
+    particles[:] = particles[indexes]
+    # print('len(particles): ', len(particles))
+    weights.resize(len(particles))
+    weights.fill (1.0 / len(weights))
+    return weights
+
+
+def estimate(particles, weights):
+    """returns mean and variance of the weighted particles"""
+
+    pos = particles[:, 0:2]
+    mean = np.average(pos, weights=weights, axis=0)
+    var  = np.average((pos - mean)**2, weights=weights, axis=0)
+    return mean, var
+
 
 # drawing image segmentations on all selected frames of each video
 def function_intensities(control_points, frame, id_frame, radius, threshold_value):
@@ -201,15 +225,46 @@ def drawing_particles(particles):
 
 
 # def update(particles, weights, mean, std, frame):
-def update(particles, frame, df_pca_intensities, weights):
+def update(features_particles, df_pca_intensities, weights):
     # print('weights:')
-    ctrlpts_particles = drawing_particles(particles)
+    # ctrlpts_particles = drawing_particles(particles)
     
-    for ctrlpts in ctrlpts_particles:
-        img = drawing_curve(frame, ctrlpts)
-        cv2.imshow('frame',img)
-        cv2.waitKey(100)
+    # for ctrlpts in ctrlpts_particles:
+    #     feat_intensities, threshold_value = function_intensities(ctrlpts, frame, id_frame, radius, threshold_value)
+    #     img = drawing_curve(frame, ctrlpts)
+    #     cv2.imshow('frame',img)
+    #     cv2.waitKey(100)
 
+    # print(df_pca_intensities)
+    pca = df_pca_intensities['pca']
+    mean_pca = df_pca_intensities['mean']
+    std_pca = df_pca_intensities['std']
+
+    # print(mean_pca)
+    # print(std_pca)
+
+    # print(len(feat_particles), len(feat_particles[0]))
+    features_pca = pca.transform(features_particles)
+    # print(len(features_pca), len(features_pca[0]))
+    # print('features pca:')
+    # print(features_pca)
+
+
+    scores_particles = scipy.stats.norm(mean_pca, std_pca).pdf(features_pca)
+    # print('scores:')
+    # print(scores_particles)
+
+    # print('weights: ', weights)
+    components=5
+
+    for id_part, scores_part in enumerate(scores_particles):
+        weights[id_part]*= np.prod(scores_part[:components])
+    # print('weights: ', weights)
+
+    # for features_one_particle in features_pca:
+    #     for comp, mean_comp, std_comp in zip(features_one_particle, mean_pca, std_pca):
+    #         weights *= scipy.stats.norm(mean_comp, std_comp).pdf(comp)
+    # #     print()
 
     # for i, landmark in enumerate(landmarks):
     #     distance = np.linalg.norm(particles[:, 0:2] - landmark, axis=1)
@@ -218,7 +273,7 @@ def update(particles, frame, df_pca_intensities, weights):
     #     # print(weights)
 
     # print('weightsUpdate:')
-    print(weights)
+    # print(weights)
     weights += 1.e-300      # avoid round-off to zero
     weights /= sum(weights) # normalize
     # print(weights)
@@ -829,7 +884,7 @@ if __name__== '__main__':
 
 
         # particles initialization, N number of particles
-        N=2
+        N=20
         particles = create_particles(ctrlpts_test_ed, N)
         # print(len(particles), len(particles[0]))
         # pf_control_points = []
@@ -852,6 +907,7 @@ if __name__== '__main__':
                 print (len(feat_intensities), feat_intensities)
                 print('median value, radius: ', threshold_value, radius)
             else:
+                # print('median value, radius: ', threshold_value, radius)
                 # mean and standard deviation between two consecutive frames
                 delta_mean = new_mean*ratios[id_frame-1]
                 delta_std = new_std*ratios[id_frame-1]
@@ -861,7 +917,32 @@ if __name__== '__main__':
                 # print('before')
                 # print(particles)
                 particles = predict(particles, delta_mean, delta_std)
-                weights = update(particles, frame, df_frames_intensities.iloc[id_frame], weights)
+
+                ctrlpts_particles = drawing_particles(particles)
+    
+                feat_particles=[]
+                for ctrlpts in ctrlpts_particles:
+                    # print('particles:', radius, threshold_value)
+                    feat_intensities, threshold_value = function_intensities(ctrlpts, frame, id_frame, radius, threshold_value)
+                    # print(feat_intensities)
+                    feat_particles.append(feat_intensities)
+                    img = drawing_curve(frame, ctrlpts)
+                    cv2.imshow('frame',img)
+                    cv2.waitKey(100)
+
+                weights = update(feat_particles, df_frames_intensities.iloc[id_frame], weights)
+
+                print('iter neff(weights): ', neff(weights))
+                if neff(weights) < 2*N/3:
+                    print('iter, resampling')
+                    indexes = systematic_resample(weights)
+                    print(indexes)
+                    weights = resample_from_index(particles, weights, indexes)
+                #     assert np.allclose(weights, 1/N)
+                # mu, var = estimate(particles, weights)
+                # print('mean variance', mu, var)
+                # xs.append(mu)
+                
                 # print('after')
                 # print(particles)
                 # curve.ctrlpts = update()
