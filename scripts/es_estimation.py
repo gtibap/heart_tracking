@@ -11,6 +11,115 @@ from sklearn.decomposition import PCA
 from numpy.random import randn
 import scipy.stats
 
+# drawing image segmentations on all selected frames of each video
+def function_intensities(control_points, frame, id_frame, radius, threshold_value):
+
+    # print('number of frames: ', len(frames))
+    # id_frame=0
+
+    curve_1 = BSpline.Curve()
+    # Set evaluation delta (control the number of curve points)
+    curve_1.delta = 0.02
+    curve_1.order = 3
+    curve_1.ctrlpts = control_points
+    curve_1.knotvector = [0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 7, 7]
+
+    # # geometric distance between apex and base at the end of diastole (ED) (first frame)
+    # apex = np.array(control_points[0])
+    # base = np.array(control_points[4])
+    # # print('apex', apex)
+    # # print('base', base)
+    # dist_ed = np.linalg.norm(apex - base)
+    
+    # radius of every circle along the curve defined in fuction of the chamber's size
+    # radius = np.int32(np.rint(dist_ed / 20.0))
+
+    # print('dist radius: ', dist_ed, radius)
+
+    # mask for intensities extraction inside the circles along the curve
+    ref_mask = np.zeros((448,448),np.uint8)
+    # ref_thresh = np.zeros((448,448),np.uint8)
+    # image size extension in case the center of the circles are too close to the borders
+    ref_mask = cv2.copyMakeBorder(ref_mask, radius,radius,radius,radius, cv2.BORDER_REPLICATE)
+
+    # features_intensities = []
+
+    # control points for each frame
+    # for id_frame, ctrl_pts in zip(np.arange(len(control_points)), control_points):
+
+    # print('data frame ctrlpts')
+    # print(id_frame)
+    # print(ctrl_pts)
+    # frame visualization
+    img = np.copy(frame)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
+    img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
+    # image size extension in case the circle too close to the image border
+    img = cv2.copyMakeBorder(img, radius,radius,radius,radius,cv2.BORDER_REFLECT_101)
+
+    # print('image size:', img.shape)
+    # updating control points due to mouse interaction
+    # curve_1.ctrlpts = control_points
+    
+    values_circles = []
+    # circles centered in each point along the Spline curve
+    for coord_point in curve_1.evalpts:
+        # intensity values inside the circles. We would need a mask of black
+        mask_circle = np.copy(ref_mask)
+        # painting a fulled white circle in the black mask
+        cv2.circle(mask_circle, np.int32(coord_point+radius), radius, 255, -1)
+        ## images visualization
+        
+        # new_mask_circle = cv2.copyMakeBorder(mask_circle, radius,radius,radius,radius,cv2.BORDER_REFLECT_101)
+        # cv2.circle(mask_circle, np.int32(coord_point), np.int32(radius/2), 125, -1)
+        # img_2 = np.copy(img)
+        # cv2.circle(img_2, np.int32(coord_point+radius), radius, 255, 1)
+
+        # cv2.imshow('mask0', mask_circle)
+        # cv2.imshow('img 2', img_2)
+        # cv2.waitKey(1000)
+
+
+        img_roi = np.ma.array(img, mask=cv2.bitwise_not(mask_circle))
+        # taking values inside the circle
+        values_circles.append(img_roi.compressed().tolist())
+        # print('shape: ', img_roi.compressed().shape)
+        # print('img_roi mean:',img_roi.mean())
+        # print('img_roi median:',np.ma.median(img_roi))
+
+    # print('values_circles.shape:', values_circles.shape)
+    # print('mean: ', values_circles.mean())
+    if id_frame==0:
+        threshold_value = np.median(values_circles)
+        # print('threshold value:', threshold_value)
+        # visualization
+        # img_t = np.copy(frames[id_frame])
+        # img_t = cv2.resize(img_t,(224,224),interpolation=cv2.INTER_CUBIC)
+        # img_t = cv2.resize(img_t,(448,448),interpolation=cv2.INTER_CUBIC)
+        # for center_ci in curve_1.evalpts:
+        #     cv2.circle(img_t, np.int32(center_ci), radius, (0,255,0), 1)
+        # cv2.imshow('image',img_t)
+        # cv2.waitKey(0)            
+    else:
+        pass
+
+    # thresholding, counting pixels above the threshold, and normalizing with the total number of pixels in each region
+    feature_values = np.count_nonzero(values_circles > threshold_value, axis=1) / len(values_circles[0])
+
+    # print('frame: ', id_frame)
+    # print(len(feature_values), len(values_circles[0]))
+    # print(feature_values)
+
+    # feature vector for all the frames
+    # features_intensities.append(feature_values.tolist())
+
+
+    # return features_intensities
+    return feature_values.tolist(), threshold_value
+
+
+
 def drawing_curve(frame, control_points):
 
     # drawing an initial B-Spline curve in a ED frame of a the test data set
@@ -35,9 +144,7 @@ def drawing_curve(frame, control_points):
     # drawing the main axis of the segmented region on the image
     # cv2.line(img, np.int32(curve.ctrlpts[0]), np.int32(curve.ctrlpts[4]), (255,255,0), 1)
 
-    cv2.imshow('frame',img)
-    cv2.waitKey(1000)
-    return
+    return img
 
 def rect2pol(coord):
     rho = np.sqrt(coord[0]**2 + coord[1]**2)
@@ -49,13 +156,15 @@ def pol2rect(coord):
     y = coord[0] * np.sin(coord[1])
     return np.array([x, y])
 
-def drawing_particles(frame, particles):
+def drawing_particles(particles):
     
     # img = np.copy(frame)
     # # resizing for a better image visualization
     # # aditionally, all data have been recording with an image size of (448,448)
     # img = cv2.resize(img,(224,224),interpolation=cv2.INTER_CUBIC)
     # img = cv2.resize(img,(448,448),interpolation=cv2.INTER_CUBIC)
+
+    ctrlpts_particles=[]
 
     for particle in particles:
         # print(particle)
@@ -80,20 +189,26 @@ def drawing_particles(frame, particles):
 
         ctrlpts = xs*secu_axis + ys*main_axis + [c0,c1]
 
+        ctrlpts_particles.append(ctrlpts.tolist())
+
         # print('control points')
         # print(ctrlpts)
-
-        drawing_curve(frame, ctrlpts.tolist())
 
         # cv2.imshow('frame', img)
         # cv2.waitKey(500)
 
-    return
+    return ctrlpts_particles
+
 
 # def update(particles, weights, mean, std, frame):
 def update(particles, frame, df_pca_intensities, weights):
     # print('weights:')
-    drawing_particles(frame, particles)
+    ctrlpts_particles = drawing_particles(particles)
+    
+    for ctrlpts in ctrlpts_particles:
+        img = drawing_curve(frame, ctrlpts)
+        cv2.imshow('frame',img)
+        cv2.waitKey(100)
 
 
     # for i, landmark in enumerate(landmarks):
@@ -654,7 +769,8 @@ if __name__== '__main__':
         main_axis_ini = control_points[4] - control_points[0]
         # normalization factor w
         factor = 5.0
-        w = np.linalg.norm(main_axis_ini) / factor
+        dist_ed = np.linalg.norm(main_axis_ini)
+        w =  dist_ed / factor
         print('w:',w)
 
         # scaling all the components of training data by w; all but ang        
@@ -713,7 +829,7 @@ if __name__== '__main__':
 
 
         # particles initialization, N number of particles
-        N=10
+        N=2
         particles = create_particles(ctrlpts_test_ed, N)
         # print(len(particles), len(particles[0]))
         # pf_control_points = []
@@ -722,24 +838,33 @@ if __name__== '__main__':
         # print('before')
         # print(particles)
         acc=0
+        threshold_value = 0
+        radius=1.0
         weights = np.ones(N) / N
-        for id_frame, frame in enumerate(selected_frames[1:]):
+        for id_frame, frame in enumerate(selected_frames):
         
             # print('frame: ', id_frame, new_mean['y5'])
             print('id frame: ', id_frame)
-            # mean and standard deviation between two consecutive frames
-            delta_mean = new_mean*ratios[id_frame]
-            delta_std = new_std*ratios[id_frame]
-            # print('frame: ', id_frame, mean_values['y5'])
-            # acc+=mean_values['y5']
-            # ctrlpts_sets = particles_generation(ctrlpts_test_es)
-            # print('before')
-            # print(particles)
-            particles = predict(particles, delta_mean, delta_std)
-            weights = update(particles, frame, df_frames_intensities.iloc[id_frame+1], weights)
-            # print('after')
-            # print(particles)
-            # curve.ctrlpts = update()
+
+            if id_frame == 0:
+                radius = np.int32(np.rint(dist_ed / 20.0))
+                feat_intensities, threshold_value = function_intensities(ctrlpts_test_ed, frame, id_frame, radius, threshold_value)
+                print (len(feat_intensities), feat_intensities)
+                print('median value, radius: ', threshold_value, radius)
+            else:
+                # mean and standard deviation between two consecutive frames
+                delta_mean = new_mean*ratios[id_frame-1]
+                delta_std = new_std*ratios[id_frame-1]
+                # print('frame: ', id_frame, mean_values['y5'])
+                # acc+=mean_values['y5']
+                # ctrlpts_sets = particles_generation(ctrlpts_test_es)
+                # print('before')
+                # print(particles)
+                particles = predict(particles, delta_mean, delta_std)
+                weights = update(particles, frame, df_frames_intensities.iloc[id_frame], weights)
+                # print('after')
+                # print(particles)
+                # curve.ctrlpts = update()
         # print('acc:', acc)
         # print('after')
         # print(particles)
