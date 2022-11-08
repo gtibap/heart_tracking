@@ -28,11 +28,14 @@ def resample_from_index(particles, weights, indexes):
 
 def estimate(particles, weights):
     """returns mean and variance of the weighted particles"""
-
-    pos = particles[:, 0:2]
-    mean = np.average(pos, weights=weights, axis=0)
-    var  = np.average((pos - mean)**2, weights=weights, axis=0)
+    # pos = particles[:, 0:2]
+    mean = np.average(particles, weights=weights, axis=0)
+    var  = np.average((particles - mean)**2, weights=weights, axis=0)
     return mean, var
+    # pos = particles[:, 0:2]
+    # mean = np.average(pos, weights=weights, axis=0)
+    # var  = np.average((pos - mean)**2, weights=weights, axis=0)
+    # return mean, var
 
 
 # drawing image segmentations on all selected frames of each video
@@ -790,9 +793,9 @@ if __name__== '__main__':
     print('done.')
     # print(data_coord.head())
 
-
+    cont_id = 15
     # reading each test video
-    for id_test, filename_test in enumerate(names_test[0:1]):
+    for id_test, filename_test in enumerate(names_test[cont_id:cont_id+1]):
 
         # opening test data: ED and ES frames with their manual segmentations; frames between ED and ES
         # manual segmentation
@@ -884,7 +887,7 @@ if __name__== '__main__':
 
 
         # particles initialization, N number of particles
-        N=20
+        N=500
         particles = create_particles(ctrlpts_test_ed, N)
         # print(len(particles), len(particles[0]))
         # pf_control_points = []
@@ -926,9 +929,10 @@ if __name__== '__main__':
                     feat_intensities, threshold_value = function_intensities(ctrlpts, frame, id_frame, radius, threshold_value)
                     # print(feat_intensities)
                     feat_particles.append(feat_intensities)
-                    img = drawing_curve(frame, ctrlpts)
-                    cv2.imshow('frame',img)
-                    cv2.waitKey(100)
+                    
+                    # img = drawing_curve(frame, ctrlpts)
+                    # cv2.imshow('frame',img)
+                    # cv2.waitKey(50)
 
                 weights = update(feat_particles, df_frames_intensities.iloc[id_frame], weights)
 
@@ -939,8 +943,16 @@ if __name__== '__main__':
                     print(indexes)
                     weights = resample_from_index(particles, weights, indexes)
                 #     assert np.allclose(weights, 1/N)
-                # mu, var = estimate(particles, weights)
-                # print('mean variance', mu, var)
+                mean_particles, var_particles = estimate(particles, weights)
+                # print('mean particles', mean_particles)
+
+                mean_ctrlpts = drawing_particles([mean_particles])
+                # print('mean ctrlpts')
+                print(mean_ctrlpts)
+
+                img = drawing_curve(frame, mean_ctrlpts[0])
+                cv2.imshow('frame',img)
+                cv2.waitKey(50)
                 # xs.append(mu)
                 
                 # print('after')
