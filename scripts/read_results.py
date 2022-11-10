@@ -40,7 +40,22 @@ def drawing_curve(frame, control_points, resize_flag, color):
 
     return img
 
-def drawing_area(control_points):
+
+def dice_coeff(ref, pred):
+
+    img_roi = np.ma.array(pred, mask=cv2.bitwise_not(ref))
+    # taking values inside the circle
+    zone = img_roi.compressed().tolist()
+    area_inter = np.count_nonzero(zone)
+    area_ref = np.count_nonzero(ref)
+    area_pred = np.count_nonzero(pred)
+    dice_value = 2*area_inter/(area_ref + area_pred)
+    # print('dice coeff: ', dice_value)
+    # print('inter, ref, pred: ', area_inter, area_ref, area_pred)
+    return dice_value, area_inter, area_ref, area_pred
+
+
+def drawing_area(control_points, list_results):
 
     # drawing an initial B-Spline curve in a ED frame of a the test data set
     curve = BSpline.Curve()
@@ -53,19 +68,24 @@ def drawing_area(control_points):
 
     background = np.zeros((448,448),np.uint8)
 
+    # initialization ED
     img0 = np.copy(background)
     cv2.fillPoly(img0,  pts=np.int32([curve.evalpts]), color=255)
+    area_ed = np.count_nonzero(img0)
+    # print('area ed: ', area_ed)
 
     #count white pixels
     area_img0 = np.count_nonzero(img0 > 125)
 
+    # reference ES
     curve.ctrlpts = control_points[1]
     img1 = np.copy(background)
     cv2.fillPoly(img1,  pts=np.int32([curve.evalpts]), color=255)
-
+    
     #count white pixels
     area_img1 = np.count_nonzero(img1 > 125)
 
+    # prediction ES
     curve.ctrlpts = control_points[2]
     img2 = np.copy(background)
     cv2.fillPoly(img2,  pts=np.int32([curve.evalpts]), color=255)
@@ -73,10 +93,16 @@ def drawing_area(control_points):
     #count white pixels
     area_img2 = np.count_nonzero(img2 > 125)
 
-    img_result = np.concatenate((img0,img1,img2),axis=1)
+    
 
-    cv2.imshow('particle filter prediction',img_result)
-    cv2.waitKey(0)
+    dice_value, area_inter, area_ref, area_pred = dice_coeff(img1, img2)
+    list_results.append([dice_value, area_inter, area_ref, area_pred, area_ed])
+
+    # print('dice_value: ', dice_value)
+
+    # img_result = np.concatenate((img0,img1,img2),axis=1)
+    # cv2.imshow('particle filter prediction',img_result)
+    # cv2.waitKey(1000)
     # img = np.copy(frame)
     # # resizing for a better image visualization
     # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -120,6 +146,7 @@ def visualization(frame_ed, frame_es, ctrlpts_test_ed, ctrlpts_test_es, mean_ctr
     cv2.waitKey(0)
     return
 
+
 ####### main function ###########
 if __name__== '__main__':
 
@@ -127,33 +154,56 @@ if __name__== '__main__':
     # filename_feat_inten = 'data/features_intensities'
     # filename_pca = 'data/pca_data'
     # filename_raw_features = 'data/raw_data_before_pca'
-    filename_results = 'data/results_10_50'
-
-    # reading list of features
-    with open(filename_results, 'rb') as fp:
-        # the frames count started at 1 (first frame)
-        print('reading features ...')
-        results_ctrlpts = pickle.load(fp)
-        print ('done.')
-
-    print('results: ', len(results_ctrlpts), len(results_ctrlpts[0]))
-    # results_ctrlpts.append([ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts[0], len(selected_frames), dist_ed, threshold_value, count_resampling]
-
-    for id, results_video in enumerate(results_ctrlpts):
-        [frame_ed, frame_es, ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts, num_frames, dist_ed, threshold_value, count_resampling] = results_video
-        # print(results_video)
-        print(id, num_frames, dist_ed, threshold_value, count_resampling)
-
-        visualization(frame_ed, frame_es, ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts)
-        # area estimation inside the curves
-
-        # area_ed, area_es, area_pred = drawing_area([ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts])
-        # print('areas: ', area_ed, area_es, area_pred)
+    filename_results='data/results_'
+    # filename_results = ['results_10_50','results_10_100','results_10_150',
+                        # 'results_15_50','results_15_100','results_15_150',
+                        # 'results_20_50','results_20_100','results_20_150',]
+    num_comp=['10','15','20']
+    num_part=['50','100','150']
+    # num_comp=['10','15']
+    # num_part=['50']
 
 
+    df_total = pd.DataFrame([], columns=['dice', 'inter', 'ref', 'pred', 'ed','comp','part'])
 
+    for id0 in num_comp:
+        for id1 in num_part:
+                    
+            filename = filename_results + id0+'_'+id1                    
+            print('opening: ', filename)
+            # reading list of features
+            with open(filename, 'rb') as fp:
+                # the frames count started at 1 (first frame)
+                print('reading features ...')
+                results_ctrlpts = pickle.load(fp)
+                print ('done.')
 
+            print('results: ', len(results_ctrlpts), len(results_ctrlpts[0]))
+            # results_ctrlpts.append([ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts[0], len(selected_frames), dist_ed, threshold_value, count_resampling]
 
+            list_results=[]
+            for id, results_video in enumerate(results_ctrlpts):
+                [frame_ed, frame_es, ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts, num_frames, dist_ed, threshold_value, count_resampling] = results_video
+                # print(results_video)
+                print(id, num_frames, dist_ed, threshold_value, count_resampling)
 
+                # visualization(frame_ed, frame_es, ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts)
 
-        cv2.destroyAllWindows()
+                # area estimation inside the curves
+                area_ed, area_es, area_pred = drawing_area([ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts], list_results)
+                # print('areas: ', area_ed, area_es, area_pred)
+                # print(list_results)
+            
+            comp=[id0]*len(list_results)
+            part=[id1]*len(list_results)
+            df_dice = pd.DataFrame(data=list_results, columns=['dice', 'inter', 'ref', 'pred', 'ed'])
+            df_dice['comp']=comp
+            df_dice['part']=part
+        
+            df_total= pd.concat([df_total, df_dice])
+        
+    print(df_total)
+
+    df_total.to_csv('data/df_total.csv')
+
+    cv2.destroyAllWindows()
