@@ -1,4 +1,5 @@
 # particle filter for motion tracking and estimation of the End of Systole left ventricular cavity
+import sys
 import numpy as np
 import cv2
 import pickle
@@ -57,7 +58,7 @@ def function_intensities(control_points, frame, id_frame, radius, threshold_valu
     # # print('apex', apex)
     # # print('base', base)
     # dist_ed = np.linalg.norm(apex - base)
-    
+
     # radius of every circle along the curve defined in fuction of the chamber's size
     # radius = np.int32(np.rint(dist_ed / 20.0))
 
@@ -88,7 +89,7 @@ def function_intensities(control_points, frame, id_frame, radius, threshold_valu
     # print('image size:', img.shape)
     # updating control points due to mouse interaction
     # curve_1.ctrlpts = control_points
-    
+
     values_circles = []
     # circles centered in each point along the Spline curve
     for coord_point in curve_1.evalpts:
@@ -97,15 +98,17 @@ def function_intensities(control_points, frame, id_frame, radius, threshold_valu
         # painting a fulled white circle in the black mask
         cv2.circle(mask_circle, np.int32(coord_point+radius), radius, 255, -1)
         ## images visualization
-        
+
         # new_mask_circle = cv2.copyMakeBorder(mask_circle, radius,radius,radius,radius,cv2.BORDER_REFLECT_101)
         # cv2.circle(mask_circle, np.int32(coord_point), np.int32(radius/2), 125, -1)
-        # img_2 = np.copy(img)
-        # cv2.circle(img_2, np.int32(coord_point+radius), radius, 255, 1)
-
-        # cv2.imshow('mask0', mask_circle)
-        # cv2.imshow('img 2', img_2)
-        # cv2.waitKey(1000)
+        # if id_frame==0:
+        #     img_2 = np.copy(img)
+        #     cv2.circle(img_2, np.int32(coord_point+radius), radius, 255, 1)
+        #     cv2.imshow('mask0', mask_circle)
+        #     cv2.imshow('img 2', img_2)
+        #     cv2.waitKey(1000)
+        # else:
+        #     pass
 
 
         img_roi = np.ma.array(img, mask=cv2.bitwise_not(mask_circle))
@@ -118,8 +121,17 @@ def function_intensities(control_points, frame, id_frame, radius, threshold_valu
     # print('values_circles.shape:', values_circles.shape)
     # print('mean: ', values_circles.mean())
     if id_frame==0:
+        # print('values_circles: ', len(values_circles), len(values_circles[0]))
+        # print(values_circles)
+        # avoiding zeros and taking only the region septum
+        # mask_values_circles = np.ma.masked_equal(values_circles[0:25], 0)
+        # print('masked median:', np.ma.median(mask_values_circles))
+
+        # print('selected values_circles: ', len(selected_values_circles), len(selected_values_circles[0]))
+        # threshold_value = np.median(values_circles)
         threshold_value = np.median(values_circles)
-        # print('threshold value:', threshold_value)
+        # threshold_value =  np.ma.median(mask_values_circles)
+        print('threshold value:', threshold_value)
         # visualization
         # img_t = np.copy(frames[id_frame])
         # img_t = cv2.resize(img_t,(224,224),interpolation=cv2.INTER_CUBIC)
@@ -127,7 +139,7 @@ def function_intensities(control_points, frame, id_frame, radius, threshold_valu
         # for center_ci in curve_1.evalpts:
         #     cv2.circle(img_t, np.int32(center_ci), radius, (0,255,0), 1)
         # cv2.imshow('image',img_t)
-        # cv2.waitKey(0)            
+        # cv2.waitKey(0)
     else:
         pass
 
@@ -165,7 +177,7 @@ def drawing_curve(frame, control_points):
     # drawing control points
     # for ctl_pt in curve.ctrlpts:
     #     cv2.circle(img, np.int32(ctl_pt), 3, (0,0,255), -1)
-    # drawing the curve 
+    # drawing the curve
     cv2.polylines(img, np.int32([curve.evalpts]), 0, (0,255,255), 1)
     # cv2.polylines(img, np.int32([curve_es.evalpts]), 0, (0,255,0), 1)
     # drawing the main axis of the segmented region on the image
@@ -184,7 +196,7 @@ def pol2rect(coord):
     return np.array([x, y])
 
 def drawing_particles(particles):
-    
+
     # img = np.copy(frame)
     # # resizing for a better image visualization
     # # aditionally, all data have been recording with an image size of (448,448)
@@ -228,10 +240,10 @@ def drawing_particles(particles):
 
 
 # def update(particles, weights, mean, std, frame):
-def update(features_particles, df_pca_intensities, weights):
+def update(features_particles, df_pca_intensities, components, weights):
     # print('weights:')
     # ctrlpts_particles = drawing_particles(particles)
-    
+
     # for ctrlpts in ctrlpts_particles:
     #     feat_intensities, threshold_value = function_intensities(ctrlpts, frame, id_frame, radius, threshold_value)
     #     img = drawing_curve(frame, ctrlpts)
@@ -258,8 +270,8 @@ def update(features_particles, df_pca_intensities, weights):
     # print(scores_particles)
 
     # print('weights: ', weights)
-    components=5
-
+    # components=15
+    print('components: ', components)
     for id_part, scores_part in enumerate(scores_particles):
         weights[id_part]*= np.prod(scores_part[:components])
     # print('weights: ', weights)
@@ -337,7 +349,7 @@ def predict(particles, u, std):
     return particles
 
     # for  id in np.arange(len(particles[0])):
-    #     particles[:,id] += u[id] + (randn(N) * std[id])    
+    #     particles[:,id] += u[id] + (randn(N) * std[id])
 
     # return particles
 
@@ -448,7 +460,7 @@ def create_particles(control_points, N):
     pts = control_points - control_points[0]
     # pts_end = control_points[1] - control_points[1][0]
     # print(control_points[0])
-    # print(pts_ini) 
+    # print(pts_ini)
     #second: calculating components of each resultant vector in the main_axis frame of reference
     # calculating secundary axis that is perpendicular to the main axis for the initial and end frames
     secu_axis_ini = np.cross(main_axis_ini, (0,0,-1))[0:2]
@@ -456,7 +468,7 @@ def create_particles(control_points, N):
 
     xs_ini = np.dot(pts, secu_axis_ini)
     ys_ini = np.dot(pts, main_axis_ini)
-    
+
     # second: control points coordinates
     particle.append(xs_ini.tolist())
     particle.append(ys_ini.tolist())
@@ -481,7 +493,7 @@ def create_particles(control_points, N):
     # transform list of lists into a plain numpy array
     particle = np.concatenate(particle)
     # print(particle)
-    particles = np.repeat([particle], N, axis=0) 
+    particles = np.repeat([particle], N, axis=0)
     # print(len(particles), particles.shape)
 
     # generating N identical particles
@@ -500,7 +512,7 @@ def create_particles(control_points, N):
     # third: calculating deltas between two consecutive frames
     # diff_xs = xs_end - xs_ini
     # diff_ys = ys_end - ys_ini
-    
+
     # # calcualting ratio of increments amount frames using a cosine function
     # alphas = np.linspace(0, 3.14159265, len(frames))
     # ratios = (1-np.cos(alphas)) / 2.0
@@ -553,13 +565,13 @@ def read_frames(dir_video, seg_data):
     #     print(ind, row['FileName'], row['Frame'])
 
     selected_frames = []
-    
+
     # print('indexes:', seg_data.index)
     cont_rows = seg_data.index[0]
     end_rows =  seg_data.index[-1]
     frame_number = seg_data.at[cont_rows, 'Frame']
     new_frame_number = seg_data.at[cont_rows, 'Frame']
-    
+
     # initial frame id
     id_frame_ini = frame_number
 
@@ -569,7 +581,7 @@ def read_frames(dir_video, seg_data):
     save_frames = False
     cont_frames=0
     end_seg_data=False
-    scale_factor = 4 
+    scale_factor = 4
 
     while cap.isOpened() and segmented_frames < 2:
         ret, frame = cap.read()
@@ -659,7 +671,7 @@ def display_frames(frames):
         # move backward, previous frame
         elif k == ord('b') and id_frame>0:
             id_frame=id_frame-1
-            # print('id_frame: ', id_frame)           
+            # print('id_frame: ', id_frame)
 
         # close window (scape key)
         elif k == 27:
@@ -667,21 +679,50 @@ def display_frames(frames):
 
         else:
             pass
-    
+
     return 0
 
 
+def pca_raw_features(feat_frames):
 
-    
+    print('feat_frames:',len(feat_frames))
+    for cont, feat_single in enumerate(feat_frames):
+        print('frame: ', cont)
+        print('feat_single:', len(feat_single), len(feat_single[0]))
+
+        pca.fit(feat_single)
+        pca_feat = pca.transform(feat_single)
+
+        mean_values = np.mean(pca_feat, axis=0)
+        std_values = np.std(pca_feat, axis=0)
+
+        pca_list.append(pca)
+        mean_list.append(mean_values)
+        std_list.append(std_values)
+
+
 
 ####### main function ###########
 if __name__== '__main__':
+
+    # print(f"Arguments count: {len(sys.argv)}")
+    # for i, arg in enumerate(sys.argv):
+    #     print(f"Argument {i:>6}: {arg}")
+
+    num_comp = np.int32(sys.argv[1]) # 10, 15, 20
+    num_particles = np.int32(sys.argv[2]) # 50, 100, 150
+
+    print('num_components pca: ', num_comp)
+    print('num_particles: ', num_particles)
+
 
     filename_controlpts = 'data/controlpts_segmentations'
     filename_pca = 'data/pca_data'
     dir_video = '../Videos/'
     filename_segmentations = '../VolumeTracings.csv'
     filename_features_ctrlpts = 'data/features_ctlpts.csv'
+    filename_raw_features = 'data/raw_data_before_pca'
+    filename_results = 'data/results'
 
     # reading list of intensity features
     with open(filename_pca, 'rb') as fp:
@@ -689,6 +730,15 @@ if __name__== '__main__':
         print('reading pca data ...')
         [X_train, X_test, names_train, names_test, pca_list, mean_list, std_list] = pickle.load(fp)
         print ('done.')
+
+    # reading list of intensity features
+    with open(filename_raw_features, 'rb') as fp:
+        # the frames count started at 1 (first frame)
+        print('reading raw features before pca ...')
+        feat_frames = pickle.load(fp)
+        print ('done.')
+    # print(len(feat_frames),len(feat_frames[0]), len(feat_frames[0][0]) )
+
 
     # print('pca: ', len(pca_list))
     # print('mean_list: ', len(mean_list), len(mean_list[0]))
@@ -743,9 +793,9 @@ if __name__== '__main__':
     std_cp = train_cp[['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1']].std()
     # mean_cp = train_cp.mean()
     # std_cp = train_cp.std()
-    print('mean and std:')
-    print(mean_cp)
-    print(std_cp)
+    # print('mean and std:')
+    # print(mean_cp)
+    # print(std_cp)
 
 
     # binwidth=0.1
@@ -754,7 +804,7 @@ if __name__== '__main__':
     # train_cp.hist(column=['ang','x1','x2','x3','x5','x6','x7','y1','y2','y3','y4','y5','y6','y7','c0','c1'], bins=np.arange(min, max + binwidth, binwidth))
     # # train_cp.hist()
     # plt.show()
-   
+
 
     # # applying PCA to the training data
     # pca_cp=PCA(n_components=13)
@@ -780,7 +830,7 @@ if __name__== '__main__':
     # # df.hist(bins=np.arange(min, max + binwidth, binwidth))
     # # # df.hist()
     # # plt.show()
-    
+
 
     # print(len(X_train), len(X_test), len(pca_list), len(mean_list), len(std_list))
     # print(names_test)
@@ -793,16 +843,18 @@ if __name__== '__main__':
     print('done.')
     # print(data_coord.head())
 
-    cont_id = 15
+    results_ctrlpts=[]
+    cont_id = 0
+    # [cont_id:cont_id+1]
     # reading each test video
-    for id_test, filename_test in enumerate(names_test[cont_id:cont_id+1]):
+    for id_test, filename_test in enumerate(names_test):
 
         # opening test data: ED and ES frames with their manual segmentations; frames between ED and ES
         # manual segmentation
         df_test = df_seg[df_seg['FileName']==filename_test]
         # print(seg_data)
 
-        
+
         # segmented ED and ES images
         selected_frames, frame_ini, frame_end = read_frames(dir_video + filename_test, df_test)
 
@@ -831,7 +883,7 @@ if __name__== '__main__':
         w =  dist_ed / factor
         print('w:',w)
 
-        # scaling all the components of training data by w; all but ang        
+        # scaling all the components of training data by w; all but ang
         new_mean = mean_cp * w
         new_std = std_cp * w
         new_mean['ang'] = mean_cp['ang']
@@ -839,7 +891,7 @@ if __name__== '__main__':
 
         # print(new_mean)
         # print(new_std)
-        
+
         # # drawing an initial B-Spline curve in a ED frame of a the test data set
         # curve_es = BSpline.Curve()
         # # Set evaluation delta (control the number of curve points)
@@ -885,9 +937,9 @@ if __name__== '__main__':
         # print('frame 1')
         # print(df_frames_intensities.iloc[1])
 
-
         # particles initialization, N number of particles
-        N=500
+        N=num_particles
+
         particles = create_particles(ctrlpts_test_ed, N)
         # print(len(particles), len(particles[0]))
         # pf_control_points = []
@@ -895,18 +947,20 @@ if __name__== '__main__':
         # img = np.copy(frame_ini)
         # print('before')
         # print(particles)
+        count_resampling=0
         acc=0
         threshold_value = 0
         radius=1.0
         weights = np.ones(N) / N
         for id_frame, frame in enumerate(selected_frames):
-        
+
             # print('frame: ', id_frame, new_mean['y5'])
             print('id frame: ', id_frame)
 
             if id_frame == 0:
                 radius = np.int32(np.rint(dist_ed / 20.0))
                 feat_intensities, threshold_value = function_intensities(ctrlpts_test_ed, frame, id_frame, radius, threshold_value)
+                frame_ed = frame
                 print (len(feat_intensities), feat_intensities)
                 print('median value, radius: ', threshold_value, radius)
             else:
@@ -922,26 +976,27 @@ if __name__== '__main__':
                 particles = predict(particles, delta_mean, delta_std)
 
                 ctrlpts_particles = drawing_particles(particles)
-    
+
                 feat_particles=[]
                 for ctrlpts in ctrlpts_particles:
                     # print('particles:', radius, threshold_value)
                     feat_intensities, threshold_value = function_intensities(ctrlpts, frame, id_frame, radius, threshold_value)
                     # print(feat_intensities)
                     feat_particles.append(feat_intensities)
-                    
+
                     # img = drawing_curve(frame, ctrlpts)
                     # cv2.imshow('frame',img)
                     # cv2.waitKey(50)
 
-                weights = update(feat_particles, df_frames_intensities.iloc[id_frame], weights)
+                weights = update(feat_particles, df_frames_intensities.iloc[id_frame], num_comp, weights)
 
-                print('iter neff(weights): ', neff(weights))
+                print('iter neff(weights): ', neff(weights), 2*N/3)
                 if neff(weights) < 2*N/3:
                     print('iter, resampling')
                     indexes = systematic_resample(weights)
                     print(indexes)
                     weights = resample_from_index(particles, weights, indexes)
+                    count_resampling+=1
                 #     assert np.allclose(weights, 1/N)
                 mean_particles, var_particles = estimate(particles, weights)
                 # print('mean particles', mean_particles)
@@ -954,7 +1009,14 @@ if __name__== '__main__':
                 cv2.imshow('frame',img)
                 cv2.waitKey(50)
                 # xs.append(mu)
-                
+
+        frame_es = frame
+        results_ctrlpts.append([frame_ed, frame_es, ctrlpts_test_ed, ctrlpts_test_es, mean_ctrlpts[0], len(selected_frames), dist_ed, threshold_value, count_resampling])
+
+        img = drawing_curve(frame, ctrlpts_test_es)
+        cv2.imshow('ES',img)
+        cv2.waitKey(1000)
+
                 # print('after')
                 # print(particles)
                 # curve.ctrlpts = update()
@@ -966,6 +1028,12 @@ if __name__== '__main__':
         #     drawing_curve(frame, control_points)
 
         # cv2.waitKey(0)
+
+    with open(filename_results, 'wb') as fp:
+        # the frames count started at 1 (first frame)
+        print('saving results ...')
+        pickle.dump(results_ctrlpts, fp)
+        print ('done.')
 
     cv2.destroyAllWindows()
 
@@ -984,9 +1052,3 @@ if __name__== '__main__':
 
     # for ind, row in seg_data.iterrows():
     #     print(ind, row['FileName'], row['Frame'])
-
-
-
-
-
-

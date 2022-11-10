@@ -25,6 +25,7 @@ if __name__== '__main__':
     filename_controlpts = 'data/controlpts_segmentations'
     filename_feat_inten = 'data/features_intensities'
     filename_pca = 'data/pca_data'
+    filename_raw_features = 'data/raw_data_before_pca'
 
     # reading list of features
     with open(filename_feat_inten, 'rb') as fp:
@@ -32,13 +33,13 @@ if __name__== '__main__':
         print('reading features ...')
         [filenames_list, features_intesities_list] = pickle.load(fp)
         print ('done.')
-    
+
     # print('filenames:\n', filenames_list)
     # print('feature intensities:\n ', len(features_intesities_list), len(features_intesities_list[0]), len(features_intesities_list[0][0]))
     # print(features_intesities_list[0][0])
-    
+
     # training validation and test splitting
-    # From the total videos, 20% for test; from the remining data, 20% for validation and 80% for training 
+    # From the total videos, 20% for test; from the remining data, 20% for validation and 80% for training
 
     X_train, X_test, names_train, names_test = train_test_split(features_intesities_list, filenames_list, test_size=0.2, random_state=42)
 
@@ -87,7 +88,7 @@ if __name__== '__main__':
             # [print(len(elem)) for elem in feat_frames]
             # print(len(feat_frames[0][0]))
             # print('idframe: ', id_frame)
-    
+
 
     binwidth=0.05
     min=-3.0
@@ -134,14 +135,20 @@ if __name__== '__main__':
         # df.hist(column=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], bins=np.arange(min, max + binwidth, binwidth))
         # df.hist(column=list(range(0,12)), bins=np.arange(min, max + binwidth, binwidth))
         # df.hist(column=list(range(16+16,16+16+16)), bins=np.arange(min, max + binwidth, binwidth))
-        
+
         # df.hist(column=list(range(0,49)), bins=np.arange(min, max + binwidth, binwidth))
         # plt.show()
 
-    with open(filename_pca, 'wb') as fp:
+    # with open(filename_pca, 'wb') as fp:
+    #     # the frames count started at 1 (first frame)
+    #     print('saving pca data ...')
+    #     pickle.dump([X_train, X_test, names_train, names_test, pca_list, mean_list, std_list], fp)
+    #     print ('done.')
+
+    with open(filename_raw_features, 'wb') as fp:
         # the frames count started at 1 (first frame)
-        print('saving pca data ...')
-        pickle.dump([X_train, X_test, names_train, names_test, pca_list, mean_list, std_list], fp)
+        print('saving raw data before pca ...')
+        pickle.dump(feat_frames, fp)
         print ('done.')
 
 
@@ -170,7 +177,7 @@ if __name__== '__main__':
     # for time_id in time_sec:
     #     time_hms = sec2hms(time_id)
     #     print('time: ', time_hms, np.sum(time_hms),pd.to_datetime(np.sum(time_hms), unit='s'))
-        
+
     #     # time_formated = datetime.timedelta(seconds= time_id)
     #     # print(time_formated.hours, time_formated.minutes, time_formated.seconds)
     #     time_list.append(time_hms)
@@ -180,7 +187,7 @@ if __name__== '__main__':
     # print(df_video)
     # print(frames_numbers)
 
-    
+
 
 
     # print(np.mean(frames_numbers), np.median(frames_numbers))
@@ -189,6 +196,3 @@ if __name__== '__main__':
     # plt.show()
 
     # dataframe
-    
-        
-
