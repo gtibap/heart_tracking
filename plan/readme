@@ -1,11 +1,10 @@
-Echonet provides image segmentations of the left ventricular cavity at the end of diastole (ED) and the end of systole (ES) for more than 10k echocardiograms.
+Echonet provides image segmentation of the left ventricular cavity at the end of diastole (ED) and the end of systole (ES) for more than 10k echocardiograms.
 For each video a cardiac cycle was selected, and the images of ED and ES of the cycle were segmented.
-Our goal is to stimate an image segmentation for ES knowing the segmentation at the ED.
+Our goal is to estimate an image segmentation for ES knowing the segmentation at the ED.
 To achieve the goal, we will apply a particle filter method to follow the shape changes of the left ventricular cavity from ED to ES, considering every frame in between ED and ES.
 We made shape estimation for every frame using B-Splines. Initially, we manually fitted a B-Spline to the boundaries of the image segmentations (ED and ES); we used nine control points, where the first and last control points share the same coordinates and are located beneath the heart's apex. We estimate the coordiantes of each control point at every frame, between ED and ES, using a cosine function between 0 (ED) and pi (ES). The cosine curve between 0 and pi aproximates the heart motion between ED and ES over time.
 For a test video, the proposed method start with a B-Spline manually fitted in the boundaries of the left heart cavity at ED. We know the frame of ES. Then, we make stimation of the curve for every frame from ED to ES.
 For the estimations we use particle filtering.
-
 
 Testing
 
