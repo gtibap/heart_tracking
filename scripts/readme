@@ -1,1 +1,15 @@
 python scripts for feature extraction, and image visualization
+
+BSpline_heart_1.py: Manual image segmentation using B-Splines. The following keys (keyboard) are required:
+n: next image
+x: save segmentations
+Esc: close video. In this point, the program will ask to continue or not (y/n).
+
+Initially, the program displays the first image (ED) with the B-Spline. The user can move the control points using the mouse (holding the left bottom).
+Once the control points were placed according with the reference segmentation, the user can press 'n' to open the next image (ES).
+Similarly, the user can adjust the control points to fit the B-spline to the reference image segmentation.
+Afterwards, the user can press 'n' to finish the segmentation of that video. 
+If the results are good, the user can save the segmentations pressing 'x'.
+Finally, pressing 'Esc' the user has two options: close the program or open the next video.
+
+
