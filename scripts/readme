@@ -1,6 +1,8 @@
 python scripts for feature extraction, and image visualization
 
-BSpline_heart_1.py: Manual image segmentation using B-Splines. The following keys (keyboard) are required:
+1. BSpline_heart_1.py
+
+Manual image segmentation using B-Splines. The following keys (keyboard) are required:
 n: next image
 x: save segmentations
 Esc: close video. In this point, the program will ask to continue or not (y/n).
@@ -11,5 +13,14 @@ Similarly, the user can adjust the control points to fit the B-spline to the ref
 Afterwards, the user can press 'n' to finish the segmentation of that video. 
 If the results are good, the user can save the segmentations pressing 'x'.
 Finally, pressing 'Esc' the user has two options: close the program or open the next video.
+
+The results are written in a file named 'controlpts_segmentations' in the folder 'data\'.
+
+
+2. feature_extraction_ctlrpts.py
+
+This script calculates features of the left ventricle deformation between end of diastole (ED) and end of systole (ES) from the data in 'controlpts_segmentations'. The features include scaling, rotation, and translation of the control points from ED to ES. Accordingly, each ED to ES deformation is represented by 21 features ('ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'); however, five of those features are always 0 ('x0', 'y0', 'x4', 'x8', 'y8'). The feature vectors are written in the in a file named 'features_ctlpts.csv' in the folder 'data\'.   
+
+3. feature...
 
 
