@@ -21,6 +21,21 @@ The results are written in a file named 'controlpts_segmentations' in the folder
 
 This script calculates features of the left ventricle deformation between end of diastole (ED) and end of systole (ES) from the data in 'controlpts_segmentations'. The features include scaling, rotation, and translation of the control points from ED to ES. Accordingly, each ED to ES deformation is represented by 21 features ('ang','x0','x1','x2','x3','x4','x5','x6','x7','x8','y0','y1','y2','y3','y4','y5','y6','y7','y8','c0','c1'); however, five of those features are always 0 ('x0', 'y0', 'x4', 'x8', 'y8'). The feature vectors are written in the in a file named 'features_ctlpts.csv' in the folder 'data\'.   
 
-3. feature...
+
+3. feature_extraction_intensities.py
+
+Starting with the control points' location from 'controlpts_segmentations', we interpolate a set of control points for each frame from ED to ES for each video of the echocardiograms for training.
+We extract pixel intensity distributions, sampling 50 regions of interest (ROI) along each B-Spline curve. We obtain a feature vector of 50 components for each frame; the values' range of each feature is between 0 and 1.
+Results are written in the 'features_intensities' file in the 'data\' folder.
+
+
+4. feature_extraction_textures.py
+
+Similarly to the 'feature_extraction_intensities.py', we extract pixels' texture using Gray-Level Co-Occurrence Matrix (GLCM) from 50 ROI along the B-Spline curves. We calculate GLCM in four directions (0, 45, 90, and 135 degrees) with an offset equal to 1 (each pixel is compared to the inmediately neigbors' pixels). Thereafter, we calculate 'Homogenity' from each matrix calculated from each ROI, and we averaged the results of all selected directions. We obtain a feature vector of 50 components for each frame; the values' range of each feature is between 0 and 1.
+Results are written in the 'features_textures' file in the 'data\' folder.
+
+
+
+
 
 
