@@ -35,7 +35,12 @@ Similarly to the 'feature_extraction_intensities.py', we extract pixels' texture
 Results are written in the 'features_textures' file in the 'data\' folder.
 
 
+5. read_features_intensities.py
 
+We apply Principal Component Analysis (PCA) for feature selection and reduction according to the cardiac phase. We needed to separate the feature vectors--coming from all the videos--into groups according to the frame number in the cardiac phase. From the selected videos, however, the number of frames between ED and ES vary; being 18 frames the average. We decided to resample the number of feature vectors of each video to 18. Resampling works as follows:
+a. We assume that the feature vectors are equally distributed in the range between 0.0 and 60.0 seconds.
+b. In the same period of time (60.0 s), we can exactly fit 18 frames (or feature vectors) with a separation of 3.529 s (60 s divided by 17 spaces) between two consecutive frames.
+c. Taking as a reference the time division for the 18 frames, we select the closest feature vector to each temporal mark, starting from the end (60.0 s). Accordingly, some feature vectors are duplicated when the number of frames is lower than 18, or discarted when the number of frames is higher than 18.
 
 
 
